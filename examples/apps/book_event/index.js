@@ -23,12 +23,34 @@ var cancelIntentFunction = function(req, res) {
 app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
 app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
 
+var getBooking = function(bookingData) {
+  if (bookingData === undefined) {
+    bookingData = {};
+  }
+  return new BookingManager(bookingData);
+}
+
+var getBookingFromRequest = function(request) {
+  var BookingData = request.session(BOOK_EVENT_SESSION_KEY);
+  return getBooking(BookingData);
+}
+
+var createBookingIntentFunction = function(bookingManager, request, response) {
+  var stepValue = request.slot('STEPVALUE');
+  bookingManager.started = true;
+  if (stepValue !== undefined) {
+    bookingManager.getStep().value = stepValue
+  }
+};
+
 app.intent('createBookingIntent', {
-    'utterances': ['{new|start|create|begin} {|a|the} booking']
+    'slots': {
+      'STEPVALUE': 'STEPVALUES',
+    },
+    'utterances': ['{new|start|create|begin} {|a|the} booking', '{-|STEPVALUE}']
   },
   function(request, response) {
-    var cakeBakerHelper = new CakeBakerHelper({});
-    cakeBakerIntentFunction(cakeBakerHelper, request, response);
+    createBookingIntentFunction(getBookingFromRequest(request), request, response);
   }
 );
 
