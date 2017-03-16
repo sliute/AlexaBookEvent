@@ -13,7 +13,7 @@ var app = new Alexa.app('book_event');
 // };
 
 app.launch(function(req, res) {
-  var prompt = 'Welcome to Book Me Alexa.' + 'To create a new booking, say create a booking.' + 'You can also say stop or cancel to exit.';
+  var prompt = 'Welcome to Book Me Alexa' + 'To create a new booking, say create a booking' + 'You can also say stop or cancel to exit.';
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
@@ -24,8 +24,9 @@ app.intent('BookIntent', {
   'utterances': ['{call this booking} {something|NAME}']
 },
   function(req, res) {
-  var room = req.slot('NAME');
-  res.say('Booking name is ' + room).shouldEndSession(false);
+    var room = req.slot('NAME');
+    res.say('Booking name is ' + room).shouldEndSession(false);
+    return true;
 });
 
 var cancelIntentFunction = function(req, res) {
@@ -33,6 +34,16 @@ var cancelIntentFunction = function(req, res) {
 };
 app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
 app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
+
+app.intent('ReadIntent', {
+  'utterances': ['{what is on|what\'s on}']
+},
+  function (req, res) {
+    var item = { EventName: 'Yoga Class', EventStartTime: '3:00 PM' };
+    res.say('Room is booked for ' + item.EventName + ' at ' + item.EventStartTime).shouldEndSession(false);
+    return true;
+}
+);
 //
 // var getBooking = function(bookingData) {
 //   if (bookingData === undefined) {
