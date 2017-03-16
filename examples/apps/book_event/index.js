@@ -44,7 +44,7 @@ app.intent('ReadIntent', {
       { EventName: 'Voodoo Academy', EventStartTime: '4:00 PM' }]
     };
     bookings.Items.forEach(function(item){
-      res.say('Room is booked for ' + item.EventName + ' at ' + item.EventStartTime).shouldEndSession(false);
+      res.say('At ' + item.EventStartTime + 'the room is booked for' + item.EventName + '<break time="1s"/>').shouldEndSession(false);
     });
     return true;
 }
