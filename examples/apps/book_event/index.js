@@ -39,8 +39,13 @@ app.intent('ReadIntent', {
   'utterances': ['{what is on|what\'s on}']
 },
   function (req, res) {
-    var item = { EventName: 'Yoga Class', EventStartTime: '3:00 PM' };
-    res.say('Room is booked for ' + item.EventName + ' at ' + item.EventStartTime).shouldEndSession(false);
+    var bookings = {
+      'Items': [ { EventName: 'Yoga Class', EventStartTime: '3:00 PM' },
+      { EventName: 'Voodoo Academy', EventStartTime: '4:00 PM' }]
+    };
+    bookings.Items.forEach(function(item){
+      res.say('Room is booked for ' + item.EventName + ' at ' + item.EventStartTime).shouldEndSession(false);
+    });
     return true;
 }
 );
