@@ -62,16 +62,16 @@ app.intent('GetByTimeIntent', {
       'Items': [ { EventName: 'Yoga Class', EventStartTime: '15:00' },
       { EventName: 'Voodoo Academy', EventStartTime: '16:00' }]
     };
-    bookings.Items.find(function(item){
+    var timeCheck = bookings.Items.find(function(item){
       if (time === item.EventStartTime) {
-        res.say('Room is booked for ' + item.EventName + ' at ' + item.EventStartTime).shouldEndSession(false);
-        return true;
-      } else {
-        res.say('Room is free at ' + time).shouldEndSession(false);
-        return true;
+        return item;
       }
     });
-    return true;
+    if (timeCheck !== undefined) {
+      res.say('Room is booked for ' + timeCheck.EventName + ' at ' + timeCheck.EventStartTime).shouldEndSession(false);
+    } else {
+      res.say('Room is free at ' + time).shouldEndSession(false);
+    }
 }
 );
 //
