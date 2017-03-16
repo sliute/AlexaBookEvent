@@ -18,9 +18,12 @@ app.launch(function(req, res) {
 });
 
 app.intent('BookIntent', {
-  "slots": { "NAME": "AMAZON.Color" },
-  "utterances": ["{NAME}"]
-}, function(req, res) {
+  'slots': {
+    'NAME': 'LIST_OF_ROOMS'
+  },
+  'utterances': ['{call this booking} {something|NAME}']
+},
+  function(req, res) {
   var room = req.slot('NAME');
   res.say('Booking name is ' + room).shouldEndSession(false);
 });
