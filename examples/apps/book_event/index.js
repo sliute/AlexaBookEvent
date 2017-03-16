@@ -13,7 +13,7 @@ var app = new Alexa.app('book_event');
 // };
 
 app.launch(function(req, res) {
-  var prompt = 'Welcome to Book Me Alexa' + 'To create a new booking, say create a booking' + 'You can also say stop or cancel to exit.';
+  var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time, but you can never leave';
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
@@ -45,6 +45,31 @@ app.intent('ReadIntent', {
     };
     bookings.Items.forEach(function(item){
       res.say('Room is booked for ' + item.EventName + ' at ' + item.EventStartTime).shouldEndSession(false);
+    });
+    return true;
+}
+);
+
+app.intent('GetByTimeIntent', {
+  'slots': {
+    'TIME': 'AMAZON.TIME'
+  },
+  'utterances': ['{what is on at|what\'s on at } {TIME}']
+},
+  function (req, res) {
+    var time = req.slot('TIME');
+    var bookings = {
+      'Items': [ { EventName: 'Yoga Class', EventStartTime: '15:00' },
+      { EventName: 'Voodoo Academy', EventStartTime: '16:00' }]
+    };
+    bookings.Items.find(function(item){
+      if (time === item.EventStartTime) {
+        res.say('Room is booked for ' + item.EventName + ' at ' + item.EventStartTime).shouldEndSession(false);
+        return true;
+      } else {
+        res.say('Room is free at ' + time).shouldEndSession(false);
+        return true;
+      }
     });
     return true;
 }
