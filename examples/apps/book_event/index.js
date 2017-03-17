@@ -30,13 +30,37 @@ var cancelIntentFunction = function(req, res) {
 app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
 app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
 
-app.intent('ReadIntent', {
-  'utterances': ['{what is on|what\'s on}']
+app.intent('GetByDayIntent', {
+  'slots': {
+    'DATE': 'AMAZON.DATE'
+  },
+  'utterances': ['{what is on|what\'s on|what is on on|what\'s on on} {DATE}']
 },
   function (req, res) {
+    var date = req.slot('DATE');
+    var dateBookings = [];
     bookings.Items.forEach(function(item){
-      res.say('At ' + item.StartTime + ' <break time="0.5s"/> ' + item.Owner + ' booked ' + item.RoomName + ' for ' + item.Name + ' for ' + item.Duration + ' <break time="1s"/>').shouldEndSession(false);
+      if (date === item.Date) {
+        dateBookings.push(item);
+      }
     });
+    if (dateBookings.length === 0) {
+      res.say('There is nothing booked that day');
+    } else {
+      dateBookings.forEach(function(item){
+        res.say('At ' + item.StartTime + ' <break time="0.5s"/> ' + item.Owner + ' booked ' + item.RoomName + ' for ' + item.Name + ' for ' + item.Duration + ' <break time="1s"/>').shouldEndSession(false);
+      });
+    }
+
+
+    // bookings.Items.forEach(function(item){
+    //   var count = 0;
+    //   if (date === item.Date) {
+    //     res.say('At ' + item.StartTime + ' <break time="0.5s"/> ' + item.Owner + ' booked ' + item.RoomName + ' for ' + item.Name + ' for ' + item.Duration + ' <break time="1s"/>').shouldEndSession(false);
+    //     count += 1;
+    //   };
+    // });
+    // if (count === 0) { res.say('There is nothing booked that day'); }
     return true;
 }
 );
@@ -45,7 +69,7 @@ app.intent('GetByTimeIntent', {
   'slots': {
     'TIME': 'AMAZON.TIME'
   },
-  'utterances': ['{what is on at|what\'s on at } {TIME}']
+  'utterances': ['{what is on at|what\'s on at } {TIME}', '{what is on now|what\'s on now}']
 },
   function (req, res) {
     var time = req.slot('TIME');

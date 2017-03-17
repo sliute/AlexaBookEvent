@@ -3,13 +3,22 @@
 		"RoomName": "Joy Room",
 		"Owner": "Dana",
 		"Name": "Yoga Class",
+		"Date": "2017-03-17",
 		"StartTime": "15:00",
 		"Duration": "30 minutes"
 	}, {
 		"RoomName": "Rooster Blood Room",
 		"Owner": "Papillon",
 		"Name": "Voodoo Academy",
+		"Date": "2017-03-13",
 		"StartTime": "16:00",
 		"Duration": "13 minutes"
+	}, {
+		"RoomName": "Living Room",
+		"Owner": "Evgeny",
+		"Name": "CEO Stuff",
+		"Date": "2017-03-13",
+		"StartTime": "14:00",
+		"Duration": "45 minutes"
 	}]
 }
