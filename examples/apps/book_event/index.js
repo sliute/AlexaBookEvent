@@ -12,21 +12,10 @@ app.launch(function(req, res) {
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
-app.intent('BookIntent', {
-  'slots': {
-    'NAME': 'LIST_OF_ROOMS'
-  },
-  'utterances': ['{call this booking} {something|NAME}']
-},
-  function(req, res) {
-    var room = req.slot('NAME');
-    res.say('Booking name is ' + room).shouldEndSession(false);
-    return true;
-});
-
 var cancelIntentFunction = function(req, res) {
   res.say('Sayonara!').shouldEndSession(true);
 };
+
 app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
 app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
 
@@ -51,37 +40,29 @@ app.intent('GetByDayIntent', {
         res.say('At ' + item.StartTime + ' <break time="0.5s"/> ' + item.Owner + ' booked ' + item.RoomName + ' for ' + item.Name + ' for ' + item.Duration + ' <break time="1s"/>').shouldEndSession(false);
       });
     }
-
-
-    // bookings.Items.forEach(function(item){
-    //   var count = 0;
-    //   if (date === item.Date) {
-    //     res.say('At ' + item.StartTime + ' <break time="0.5s"/> ' + item.Owner + ' booked ' + item.RoomName + ' for ' + item.Name + ' for ' + item.Duration + ' <break time="1s"/>').shouldEndSession(false);
-    //     count += 1;
-    //   };
-    // });
-    // if (count === 0) { res.say('There is nothing booked that day'); }
     return true;
 }
 );
 
 app.intent('GetByTimeIntent', {
   'slots': {
-    'TIME': 'AMAZON.TIME'
+    'TIME': 'AMAZON.TIME',
+    'DATE2': 'AMAZON.DATE'
   },
-  'utterances': ['{what is on at|what\'s on at } {TIME}', '{what is on now|what\'s on now}']
+  'utterances': ['{what is on at|what\'s on at } {TIME} {DATE2}']
 },
   function (req, res) {
     var time = req.slot('TIME');
+    var date2 = req.slot('DATE2');
     var timeCheck = bookings.Items.find(function(item){
-      if (time === item.StartTime) {
+      if (time === item.StartTime && item.Date === date2) {
         return item;
       }
     });
     if (timeCheck !== undefined) {
       res.say(timeCheck.Owner + ' booked ' + timeCheck.RoomName + ' for ' + timeCheck.Name + ' from ' + timeCheck.StartTime + ' for ' + timeCheck.Duration).shouldEndSession(false);
     } else {
-      res.say('Room is free at ' + time).shouldEndSession(false);
+      res.say('All rooms are free at ' + time + ' ' + date2).shouldEndSession(false);
     }
 }
 );
