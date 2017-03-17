@@ -4,14 +4,69 @@ var _ = require('lodash')
 var Alexa = require('alexa-app');
 var app = new Alexa.app('book_event');
 var fs = require('fs');
-// var bookings = JSON.parse(fs.readFileSync('./apps/book_event/bookings.json', 'utf8'));
-var bookings = JSON.parse(fs.readFileSync('./bookings.json', 'utf8'));
+var bookings = {};
 var moment = require('moment');
 
-
 app.launch(function(req, res) {
+  bookings.Items = [];
+  bookings.Items.push({
+		"RoomName": "Joy Room",
+		"Owner": "Dana",
+		"Name": "Yoga Class",
+		"Date": "2017-03-17",
+		"StartTime": "17:00",
+		"Duration": "PT60M"
+	}, {
+		"RoomName": "Rooster Blood Room",
+		"Owner": "Papillon",
+		"Name": "Voodoo Academy",
+		"Date": "2017-03-13",
+		"StartTime": "16:00",
+		"Duration": "PT45M"
+	}, {
+		"RoomName": "Living Room",
+		"Owner": "Evgeny",
+		"Name": "CEO Stuff",
+		"Date": "2017-03-13",
+		"StartTime": "15:00",
+		"Duration": "PT15M"
+	});
+  var json = JSON.stringify(bookings);
+  fs.writeFile('bookings.json', json, 'utf8');
+
   var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time you like, but you can never leave';
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
+});
+
+app.intent('createBookingIntent', {
+  'slots': {
+    'TITLE': 'DESCRIPTION',
+    'DATE': 'AMAZON.DATE',
+    'TIME': 'AMAZON.TIME',
+    'OWNER': 'LIST_OF_MAKERS',
+    'DURATION': 'AMAZON.DURATION'
+  },
+  'utterances': ['{book room|create booking|call booking} {|for} {-|TITLE}']
+},
+  function(req, res) {
+    var title = req.slot('TITLE');
+    var newEvent = {
+  		"Name": title,
+  	};
+
+    fs.readFile('bookings.json', 'utf8', function(err, data){
+      if (err) {
+        console.log(err);
+      } else {
+        bookings = JSON.parse(data);
+        bookings.Items.push(newEvent);
+        var json = JSON.stringify(bookings);
+        fs.writeFile('bookings.json', json, 'utf8');
+      }
+    })
+
+    res.say('Room is booked for ' + title).shouldEndSession(false);
+    return true;
 });
 
 var cancelIntentFunction = function(req, res) {
