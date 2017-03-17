@@ -18,6 +18,11 @@ var bookings = {};
 // };
 
 app.launch(function(req, res) {
+  bookings.Items = [];
+  bookings.Items.push({"EventName":"Yoga Class","EventStartTime":"15:00"});
+  var json = JSON.stringify(bookings);
+  fs.writeFile('bookings.json', json, 'utf8');
+
   var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time, but you can never leave';
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
@@ -39,39 +44,10 @@ app.intent('createBookingIntent', {
   		"EventName": title,
   	};
 
-    // var obj = {};
-    // obj.table = [];
-    //
-    // obj.table.push({"name":"Edyta"});
-    //
-    // var json = JSON.stringify(obj);
-    //
-    // fs.writeFile('./test.json', json, 'utf8');
-    //
-    // fs.readFile('./test.json', 'utf8', function(err, data){
-    //   console.log("meow!")
-    //   if (err) {
-    //     console.log(err);
-    //   } else {
-    //     obj = JSON.parse(data);
-    //     obj.table.push({"name":"Irene"});
-    //     console.log("wow!")
-    //     json = JSON.stringify(obj);
-    //     fs.writeFile('./test.json', json, 'utf8');
-    //     console.log("Yay!")
-    //   }
-    // })
-
-    bookings.Items = [];
-    bookings.Items.push({"EventName":"Yoga Class","EventStartTime":"15:00"});
-    var json = JSON.stringify(bookings);
-    fs.writeFile('bookings.json', json, 'utf8');
-
     fs.readFile('bookings.json', 'utf8', function(err, data){
       if (err) {
         console.log(err);
       } else {
-        console.log(bookings);
         bookings = JSON.parse(data);
         bookings.Items.push(newEvent);
         var json = JSON.stringify(bookings);
