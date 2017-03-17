@@ -4,8 +4,8 @@ var _ = require('lodash')
 var Alexa = require('alexa-app');
 var app = new Alexa.app('book_event');
 var fs = require('fs');
-// var bookings = JSON.parse(fs.readFileSync('./apps/book_event/bookings.json', 'utf8'));
-var bookings = JSON.parse(fs.readFileSync('./bookings.json', 'utf8'));
+var bookings = JSON.parse(fs.readFileSync('./apps/book_event/bookings.json', 'utf8'));
+// var bookings = JSON.parse(fs.readFileSync('./bookings.json', 'utf8'));
 
 app.launch(function(req, res) {
   var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time you like, but you can never leave';
@@ -35,7 +35,7 @@ app.intent('ReadIntent', {
 },
   function (req, res) {
     bookings.Items.forEach(function(item){
-      res.say('At ' + item.EventStartTime + ' the room is booked for ' + item.EventName + ' <break time="1s"/>').shouldEndSession(false);
+      res.say('At ' + item.StartTime + ' <break time="0.5s"/> ' + item.Owner + ' booked ' + item.RoomName + ' for ' + item.Name + ' for ' + item.Duration + ' <break time="1s"/>').shouldEndSession(false);
     });
     return true;
 }
@@ -50,12 +50,12 @@ app.intent('GetByTimeIntent', {
   function (req, res) {
     var time = req.slot('TIME');
     var timeCheck = bookings.Items.find(function(item){
-      if (time === item.EventStartTime) {
+      if (time === item.StartTime) {
         return item;
       }
     });
     if (timeCheck !== undefined) {
-      res.say('Room is booked for ' + timeCheck.EventName + ' at ' + timeCheck.EventStartTime).shouldEndSession(false);
+      res.say(timeCheck.Owner + ' booked ' + timeCheck.RoomName + ' for ' + timeCheck.Name + ' from ' + timeCheck.StartTime + ' for ' + timeCheck.Duration).shouldEndSession(false);
     } else {
       res.say('Room is free at ' + time).shouldEndSession(false);
     }

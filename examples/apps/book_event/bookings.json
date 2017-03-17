@@ -1,9 +1,15 @@
 {
 	"Items": [{
-		"EventName": "Yoga Class",
-		"EventStartTime": "15:00"
+		"RoomName": "Joy Room",
+		"Owner": "Dana",
+		"Name": "Yoga Class",
+		"StartTime": "15:00",
+		"Duration": "30 minutes"
 	}, {
-		"EventName": "Voodoo Academy",
-		"EventStartTime": "16:00"
+		"RoomName": "Rooster Blood Room",
+		"Owner": "Papillon",
+		"Name": "Voodoo Academy",
+		"StartTime": "16:00",
+		"Duration": "13 minutes"
 	}]
 }
