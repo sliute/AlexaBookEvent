@@ -35,13 +35,10 @@ app.intent('createBookingIntent', {
   function(req, res) {
     var title = req.slot('TITLE');
     var newEvent = {
-  		"EventName": "Mango Party",
+  		"EventName": title,
   	};
 
-    // var addEvent = JSON.stringify(newEvent);
-
     fs.readFile('./apps/book_event/bookings.json', 'utf8', function(err, data){
-      console.log("hello");
       if (err) {
         console.log(err);
       } else {
