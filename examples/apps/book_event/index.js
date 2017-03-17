@@ -47,13 +47,13 @@ app.intent('GetByDayIntent', {
 app.intent('GetByTimeIntent', {
   'slots': {
     'TIME': 'AMAZON.TIME',
-    'DATE2': 'AMAZON.DATE'
+    'DATE': 'AMAZON.DATE'
   },
-  'utterances': ['{what is on at|what\'s on at } {TIME} {DATE2}']
+  'utterances': ['{what is on at|what\'s on at } {TIME} {DATE}']
 },
   function (req, res) {
     var time = req.slot('TIME');
-    var date2 = req.slot('DATE2');
+    var date2 = req.slot('DATE');
     var timeCheck = bookings.Items.find(function(item){
       if (time === item.StartTime && item.Date === date2) {
         return item;
