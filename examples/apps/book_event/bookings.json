@@ -1,9 +1,1 @@
-{
-	"Items": [{
-		"EventName": "Yoga Class",
-		"EventStartTime": "15:00"
-	}, {
-		"EventName": "Voodoo Academy",
-		"EventStartTime": "16:00"
-	}]
-}
+{"Items":[{"EventName":"Yoga Class","EventStartTime":"15:00"},{"EventName":"Voodoo Academy","EventStartTime":"16:00"},{"EventName":"Mango Party"}]}

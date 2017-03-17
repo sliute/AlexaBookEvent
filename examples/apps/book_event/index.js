@@ -5,7 +5,9 @@ var Alexa = require('alexa-app');
 // var BOOK_EVENT_SESSION_KEY = 'book_event';
 var app = new Alexa.app('book_event');
 var fs = require('fs');
-var bookings = JSON.parse(fs.readFileSync('./bookings.json', 'utf8'));
+var bookings = JSON.parse(fs.readFileSync('./apps/book_event/bookings.json', 'utf8'));
+// var bookings = JSON.parse(fs.readFileSync('./bookings.json', 'utf8'));
+
 // var BookingManager = require('./bookingmanager');
 // var DBHelper = require('./db_helper');
 // var dbHelper = new DBHelper();
@@ -19,15 +21,37 @@ app.launch(function(req, res) {
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
-app.intent('BookIntent', {
+app.intent('createBookingIntent', {
+
   'slots': {
-    'NAME': 'LIST_OF_ROOMS'
+    'TITLE': 'DESCRIPTION',
+    'DATE': 'AMAZON.DATE',
+    'TIME': 'AMAZON.TIME',
+    'OWNER': 'LIST_OF_MAKERS',
+    'DURATION': 'AMAZON.DURATION'
   },
-  'utterances': ['{call this booking} {something|NAME}']
+  'utterances': ['{book room|create booking|call booking} {|for} {-|TITLE}']
 },
   function(req, res) {
-    var room = req.slot('NAME');
-    res.say('Booking name is ' + room).shouldEndSession(false);
+    var title = req.slot('TITLE');
+    var newEvent = {
+  		"EventName": "Mango Party",
+  	};
+
+    // var addEvent = JSON.stringify(newEvent);
+
+    fs.readFile('./apps/book_event/bookings.json', 'utf8', function(err, data){
+      console.log("hello");
+      if (err) {
+        console.log(err);
+      } else {
+        bookings = JSON.parse(data);
+        bookings.Items.push(newEvent);
+        var json = JSON.stringify(bookings);
+        fs.writeFile('./apps/book_event/bookings.json', json, 'utf8');
+      }
+    })
+    res.say('Room is booked for ' + title).shouldEndSession(false);
     return true;
 });
 
