@@ -4,10 +4,11 @@ var _ = require('lodash')
 var Alexa = require('alexa-app');
 var app = new Alexa.app('book_event');
 var fs = require('fs');
+// var bookings = JSON.parse(fs.readFileSync('./apps/book_event/bookings.json', 'utf8'));
 var bookings = JSON.parse(fs.readFileSync('./bookings.json', 'utf8'));
 
 app.launch(function(req, res) {
-  var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time, but you can never leave';
+  var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time you like, but you can never leave';
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
