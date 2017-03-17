@@ -2,17 +2,9 @@
 module.change_code = 1;
 var _ = require('lodash')
 var Alexa = require('alexa-app');
-// var BOOK_EVENT_SESSION_KEY = 'book_event';
 var app = new Alexa.app('book_event');
 var fs = require('fs');
 var bookings = JSON.parse(fs.readFileSync('./bookings.json', 'utf8'));
-// var BookingManager = require('./bookingmanager');
-// var DBHelper = require('./db_helper');
-// var dbHelper = new DBHelper();
-
-// app.pre = function(request, response, type) {
-//   dbHelper.createBookEventTable();
-// };
 
 app.launch(function(req, res) {
   var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time, but you can never leave';
@@ -42,7 +34,7 @@ app.intent('ReadIntent', {
 },
   function (req, res) {
     bookings.Items.forEach(function(item){
-      res.say('At ' + item.EventStartTime + 'the room is booked for' + item.EventName + '<break time="1s"/>').shouldEndSession(false);
+      res.say('At ' + item.EventStartTime + ' the room is booked for ' + item.EventName + ' <break time="1s"/>').shouldEndSession(false);
     });
     return true;
 }
@@ -68,38 +60,5 @@ app.intent('GetByTimeIntent', {
     }
 }
 );
-//
-// var getBooking = function(bookingData) {
-//   if (bookingData === undefined) {
-//     bookingData = {};
-//   }
-//   return new BookingManager(bookingData);
-// }
-//
-// var getBookingFromRequest = function(request) {
-//   var BookingData = request.session(BOOK_EVENT_SESSION_KEY);
-//   return getBooking(BookingData);
-// }
-//
-// var createBookingIntentFunction = function(bookingManager, request, response) {
-//   var stepValue = request.slot('STEPVALUE');
-//   bookingManager.started = true;
-//   if (stepValue !== undefined) {
-//     bookingManager.getStep().value = stepValue
-//   }
-// };
-//
-// app.intent('createBookingIntent', {
-//     'slots': {
-//       'STEPVALUE': 'STEPVALUES',
-//     },
-//     'utterances': ['{new|start|create|begin} {|a|the} booking', '{-|STEPVALUE}']
-//   },
-//   function(request, response) {
-//     createBookingIntentFunction(getBookingFromRequest(request), request, response);
-//   }
-// );
-
-
 
 module.exports = app;
