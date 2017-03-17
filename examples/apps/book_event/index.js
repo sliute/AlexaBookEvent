@@ -4,6 +4,8 @@ var _ = require('lodash')
 var Alexa = require('alexa-app');
 // var BOOK_EVENT_SESSION_KEY = 'book_event';
 var app = new Alexa.app('book_event');
+var fs = require('fs');
+var bookings = JSON.parse(fs.readFileSync('./bookings.json', 'utf8'));
 // var BookingManager = require('./bookingmanager');
 // var DBHelper = require('./db_helper');
 // var dbHelper = new DBHelper();
@@ -39,10 +41,6 @@ app.intent('ReadIntent', {
   'utterances': ['{what is on|what\'s on}']
 },
   function (req, res) {
-    var bookings = {
-      'Items': [ { EventName: 'Yoga Class', EventStartTime: '3:00 PM' },
-      { EventName: 'Voodoo Academy', EventStartTime: '4:00 PM' }]
-    };
     bookings.Items.forEach(function(item){
       res.say('At ' + item.EventStartTime + 'the room is booked for' + item.EventName + '<break time="1s"/>').shouldEndSession(false);
     });
@@ -58,10 +56,6 @@ app.intent('GetByTimeIntent', {
 },
   function (req, res) {
     var time = req.slot('TIME');
-    var bookings = {
-      'Items': [ { EventName: 'Yoga Class', EventStartTime: '15:00' },
-      { EventName: 'Voodoo Academy', EventStartTime: '16:00' }]
-    };
     var timeCheck = bookings.Items.find(function(item){
       if (time === item.EventStartTime) {
         return item;
