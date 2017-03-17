@@ -5,8 +5,9 @@ var Alexa = require('alexa-app');
 // var BOOK_EVENT_SESSION_KEY = 'book_event';
 var app = new Alexa.app('book_event');
 var fs = require('fs');
-var bookings = JSON.parse(fs.readFileSync('./apps/book_event/bookings.json', 'utf8'));
-// var bookings = JSON.parse(fs.readFileSync('./bookings.json', 'utf8'));
+var bookings = {};
+// var bookings = JSON.parse(fs.readFileSync('./apps/book_event/tmp/bookings.json', 'utf8'));
+// var bookings = JSON.parse(fs.readFileSync('./tmp/bookings.json', 'utf8'));
 
 // var BookingManager = require('./bookingmanager');
 // var DBHelper = require('./db_helper');
@@ -38,16 +39,46 @@ app.intent('createBookingIntent', {
   		"EventName": title,
   	};
 
-    fs.readFile('./apps/book_event/bookings.json', 'utf8', function(err, data){
+    // var obj = {};
+    // obj.table = [];
+    //
+    // obj.table.push({"name":"Edyta"});
+    //
+    // var json = JSON.stringify(obj);
+    //
+    // fs.writeFile('./test.json', json, 'utf8');
+    //
+    // fs.readFile('./test.json', 'utf8', function(err, data){
+    //   console.log("meow!")
+    //   if (err) {
+    //     console.log(err);
+    //   } else {
+    //     obj = JSON.parse(data);
+    //     obj.table.push({"name":"Irene"});
+    //     console.log("wow!")
+    //     json = JSON.stringify(obj);
+    //     fs.writeFile('./test.json', json, 'utf8');
+    //     console.log("Yay!")
+    //   }
+    // })
+
+    bookings.Items = [];
+    bookings.Items.push({"EventName":"Yoga Class","EventStartTime":"15:00"});
+    var json = JSON.stringify(bookings);
+    fs.writeFile('bookings.json', json, 'utf8');
+
+    fs.readFile('bookings.json', 'utf8', function(err, data){
       if (err) {
         console.log(err);
       } else {
+        console.log(bookings);
         bookings = JSON.parse(data);
         bookings.Items.push(newEvent);
         var json = JSON.stringify(bookings);
-        fs.writeFile('./apps/book_event/bookings.json', json, 'utf8');
+        fs.writeFile('bookings.json', json, 'utf8');
       }
     })
+
     res.say('Room is booked for ' + title).shouldEndSession(false);
     return true;
 });
@@ -89,37 +120,6 @@ app.intent('GetByTimeIntent', {
     }
 }
 );
-//
-// var getBooking = function(bookingData) {
-//   if (bookingData === undefined) {
-//     bookingData = {};
-//   }
-//   return new BookingManager(bookingData);
-// }
-//
-// var getBookingFromRequest = function(request) {
-//   var BookingData = request.session(BOOK_EVENT_SESSION_KEY);
-//   return getBooking(BookingData);
-// }
-//
-// var createBookingIntentFunction = function(bookingManager, request, response) {
-//   var stepValue = request.slot('STEPVALUE');
-//   bookingManager.started = true;
-//   if (stepValue !== undefined) {
-//     bookingManager.getStep().value = stepValue
-//   }
-// };
-//
-// app.intent('createBookingIntent', {
-//     'slots': {
-//       'STEPVALUE': 'STEPVALUES',
-//     },
-//     'utterances': ['{new|start|create|begin} {|a|the} booking', '{-|STEPVALUE}']
-//   },
-//   function(request, response) {
-//     createBookingIntentFunction(getBookingFromRequest(request), request, response);
-//   }
-// );
 
 
 
