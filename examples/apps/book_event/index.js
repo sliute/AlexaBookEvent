@@ -32,7 +32,7 @@ app.launch(function(req, res) {
 		"Duration": "PT15M"
 	});
   var json = JSON.stringify(bookings);
-  fs.writeFile('bookings.json', json, 'utf8');
+  fs.writeFile('/tmp/bookings.json', json, 'utf8');
 
   var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time you like, but you can never leave';
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
@@ -54,14 +54,14 @@ app.intent('createBookingIntent', {
   		"Name": title,
   	};
 
-    fs.readFile('bookings.json', 'utf8', function(err, data){
+    fs.readFile('/tmp/bookings.json', 'utf8', function(err, data){
       if (err) {
         console.log(err);
       } else {
         bookings = JSON.parse(data);
         bookings.Items.push(newEvent);
         var json = JSON.stringify(bookings);
-        fs.writeFile('bookings.json', json, 'utf8');
+        fs.writeFile('/tmp/bookings.json', json, 'utf8');
       }
     })
 
@@ -80,7 +80,7 @@ app.intent('GetByDayIntent', {
   'slots': {
     'DATE': 'AMAZON.DATE'
   },
-  'utterances': ['{what is on|what\'s on|what is on on|what\'s on on} {DATE}']
+  'utterances': ['{what is on|what\'s on|what is on on|what\'s on on} {-|DATE}']
 },
   function (req, res) {
     var date = req.slot('DATE');
@@ -134,7 +134,7 @@ app.intent('GetByTimeIntent', {
     'TIME': 'AMAZON.TIME',
     'DATE': 'AMAZON.DATE'
   },
-  'utterances': ['{what is on at|what\'s on at } {TIME} {DATE}']
+  'utterances': ['{what is on at|what\'s on at } {-|TIME} {-|DATE}']
 },
   function (req, res) {
     var time = req.slot('TIME');
