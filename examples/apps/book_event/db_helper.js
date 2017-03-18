@@ -14,7 +14,7 @@ var dynasty = localDynasty;
 
 function BookingManager() {}
 
-var bookedEventsTable = dynasty.table(EVENTS_TABLE_NAME);
+var bookedEventsTable = function() { return dynasty.table(EVENTS_TABLE_NAME); };
 
 BookingManager.prototype.createBookedEventsTable = function() {
   return dynasty.describe(EVENTS_TABLE_NAME)

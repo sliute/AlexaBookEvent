@@ -23,13 +23,13 @@ var localDynasty = require('dynasty')(localCredentials, localUrl);
 var dynasty = localDynasty;
 
 var createBookedEventsTable = function() {
-  return dynasty.table(EVENTS_TABLE_NAME)
+  return dynasty.describe(EVENTS_TABLE_NAME)
     .catch(function(error) {
       console.log("createBookEventTable::error: ", error);
       return dynasty.create(EVENTS_TABLE_NAME, {
         key_schema: {
-          hash: ['RoomName', 'string'],
-          range: ['Date', 'string']
+          hash: ['RoomDate', 'string']
+          // range: ['Date', 'string']
         }
       });
     });
@@ -43,28 +43,42 @@ app.pre = function(request, response, type) {
 
 app.intent('addHardCodedBookingIntent', {}, function(req, res){
   bookedEventsTable.insert({
+    "RoomDate": "Joy Room 2017-03-17",
 		"RoomName": "Joy Room",
 		"Owner": "Dana",
-		"Name": "Yoga Class",
+		"Name": "Yoga Class 01",
 		"Date": "2017-03-17",
+		"StartTime": "17:00",
+		"Duration": "PT60M"
+	});
+
+  bookedEventsTable.insert({
+    "RoomDate": "Living Room 2017-03-17",
+		"RoomName": "Living Room",
+		"Owner": "Dana",
+		"Name": "Yoga Class 02",
+		"Date": "2017-03-17",
+		"StartTime": "17:00",
+		"Duration": "PT60M"
+	});
+
+  bookedEventsTable.insert({
+    "RoomDate": "Joy Room 2017-03-22",
+		"RoomName": "Joy Room",
+		"Owner": "Dana",
+		"Name": "Yoga Class 03",
+		"Date": "2017-03-22",
 		"StartTime": "17:00",
 		"Duration": "PT60M"
 	});
   res.say('Booking created for Joy Room').shouldEndSession(false);
 });
 
-// var readEvents = function(foundEvents, res, req) {
-//   console.log(foundEvents);
-//   foundEvents.forEach(function(event) {
-//     res.say('Booked for ' + event.Name).shouldEndSession(false);
-//   });
-// };
-
 app.intent('seeRoomDateBookingsIntent', {}, function(req, res){
-  bookedEventsTable.findAll('Joy Room', '2017-03-17')
+  return bookedEventsTable.findAll('Joy Room 2017-03-17')
     .then(function(foundEvents) {
       foundEvents.forEach(function(event) {
-        res.say('Booked for ' + event.Name).shouldEndSession(false);
+        res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date).shouldEndSession(false);
       });
     });
 });
