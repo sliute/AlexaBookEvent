@@ -3,6 +3,8 @@ module.change_code = 1;
 var _ = require('lodash')
 var Alexa = require('alexa-app');
 var app = new Alexa.app('book_event');
+var BookingManager = require('./bookingmanager');
+var BOOKING_CREATE_SESSION_KEY = 'booking_create';
 var fs = require('fs');
 var bookings = {};
 var moment = require('moment');
@@ -38,36 +40,92 @@ app.launch(function(req, res) {
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
+// app.intent('createBookingIntent', {
+//   'slots': {
+//     'TITLE': 'DESCRIPTION',
+//     'DATE': 'AMAZON.DATE',
+//     'TIME': 'AMAZON.TIME',
+//     'OWNER': 'LIST_OF_MAKERS',
+//     'DURATION': 'AMAZON.DURATION'
+//   },
+//   'utterances': ['{book room|create booking|call booking} {|for} {-|TITLE}']
+// },
+//   function(req, res) {
+//     var title = req.slot('TITLE');
+//     var newEvent = {
+//   		"Name": title,
+//   	};
+//
+//     fs.readFile('/tmp/bookings.json', 'utf8', function(err, data){
+//       if (err) {
+//         console.log(err);
+//       } else {
+//         bookings = JSON.parse(data);
+//         bookings.Items.push(newEvent);
+//         var json = JSON.stringify(bookings);
+//         fs.writeFile('/tmp/bookings.json', json, 'utf8');
+//       }
+//     })
+//
+//     res.say('Room is booked for ' + title).shouldEndSession(false);
+//     return true;
+// });
+
+var getBooking = function(request) {
+  var bookingData = request.session(BOOKING_CREATE_SESSION_KEY);
+  if (bookingData === undefined) {
+    bookingData = {};
+  }
+  return new BookingManager(bookingData);
+};
+
+var createBookingIntentFunction = function(bookingManager, request, response) {
+  var stepValue = request.slot('STEPVALUE');
+  // var bookingManager = new BookingManager({});
+  var bookingManager = getBooking(request);
+  console.log(bookingManager);
+  bookingManager.started = true;
+
+  // Writing to the value attibute in the booking script - getStep()
+
+    if (stepValue !== undefined) {
+    bookingManager.bookingScript[bookingManager.bookingIndex].steps[bookingManager.currentStep].value = stepValue;
+  }
+
+  if (bookingManager.completed()) {
+    var completedBooking = bookingManager.printBooking();
+    // response.card(completedBooking);
+    response.say(completedBooking);
+    response.shouldEndSession(true);
+  } else {
+    if (stepValue !== undefined) {
+      bookingManager.currentStep++;
+    }
+
+  // Reading from the promp attibute in the booking script - getPrompt()
+
+    response.say('Give me ' + bookingManager.bookingScript[bookingManager.bookingIndex].steps[bookingManager.currentStep].prompt);
+    response.reprompt('I didn\'t hear anything. Give me ' + bookingManager.bookingScript[bookingManager.bookingIndex].steps[bookingManager.currentStep].prompt + ' to continue.');
+    response.shouldEndSession(false);
+  }
+  // Not super sure we need it
+  response.session(BOOKING_CREATE_SESSION_KEY, bookingManager);
+  response.send();
+};
+
 app.intent('createBookingIntent', {
   'slots': {
-    'TITLE': 'DESCRIPTION',
-    'DATE': 'AMAZON.DATE',
-    'TIME': 'AMAZON.TIME',
-    'OWNER': 'LIST_OF_MAKERS',
-    'DURATION': 'AMAZON.DURATION'
+    'STEPVALUE': 'AMAZON.DATE'
   },
-  'utterances': ['{book room|create booking|call booking} {|for} {-|TITLE}']
+  'utterances': ['{new|start|create} {|a|the} booking',
+    '{-|STEPVALUE}'
+  ]
 },
-  function(req, res) {
-    var title = req.slot('TITLE');
-    var newEvent = {
-  		"Name": title,
-  	};
-
-    fs.readFile('/tmp/bookings.json', 'utf8', function(err, data){
-      if (err) {
-        console.log(err);
-      } else {
-        bookings = JSON.parse(data);
-        bookings.Items.push(newEvent);
-        var json = JSON.stringify(bookings);
-        fs.writeFile('/tmp/bookings.json', json, 'utf8');
-      }
-    })
-
-    res.say('Room is booked for ' + title).shouldEndSession(false);
-    return true;
-});
+  function(request, response) {
+    createBookingIntentFunction(getBooking(request), request,
+      response);
+  }
+);
 
 var cancelIntentFunction = function(req, res) {
   res.say('Sayonara!').shouldEndSession(true);
