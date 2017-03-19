@@ -30,51 +30,8 @@ var cancelIntentFunction = function(req, res) {
 };
 
 app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
+
 app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
-
-app.intent('readRoomDateBookingsIntent', {
-  'slots': {
-    'ROOM': 'LIST_OF_ROOMS',
-    'DATE': 'AMAZON.DATE'
-  },
-  'utterances': ['{tell|give} {|me} {|all} {|the} {bookings|events} {for} {-|ROOM} {|on|for} {-|DATE}']},
-function(req, res){
-  var room = req.slot('ROOM');
-  var date = req.slot('DATE');
-  var roomDate = req.slot('ROOM') + ' ' + req.slot('DATE');
-  return dbHelper.readRoomDateRecords(roomDate)
-    .then(function(results) {
-      if (results.length !== 0) {
-        results.forEach(function(event) {
-          res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date + ' ').shouldEndSession(false);
-        });
-      } else {
-        res.say('The ' + room + ' is free the whole day on ' + date).shouldEndSession(false);
-      }
-    });
-});
-
-app.intent('deleteBookingIntent', {
-  'slots': {
-    'NAME': 'DESCRIPTION',
-    'ROOM': 'LIST_OF_ROOMS',
-    'DATE': 'AMAZON.DATE'
-  },
-  'utterances': ['{remove|delete|cancel} {-|NAME} {from} {-|ROOM} {|on|for} {-|DATE}']},
-function(req, res) {
-  var eventName = req.slot('NAME');
-  var eventRoom = req.slot('ROOM');
-  var eventDate = req.slot('DATE');
-  var roomDate = req.slot('ROOM') + ' ' + req.slot('DATE');
-  return dbHelper.deleteRoomDateRecord(roomDate, eventName)
-    .then(function(deletedEvents) {
-      if (deletedEvents === 0) {
-        res.say('Sorry, I could find nothing to delete');
-      } else {
-        res.say(eventName + ' from ' + eventRoom + ' on ' + eventDate + ' has been deleted').shouldEndSession(false);
-      }
-    });
-});
 
 app.intent('dateBookingIntent', {
   'slots': {
@@ -177,52 +134,52 @@ app.intent('ownerBookingIntent', {
         if (overlaps) {
           res.say('Sorry, the room is booked at that time').shouldEndSession(false);
         } else {
-          res.say('Thanks' + owner + '. You have booked the' + bookingData.RoomName + ' for ' + bookingData.Date + ' at ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
+          res.say('Thanks ' + owner + '. You have booked the' + bookingData.RoomName + ' for ' + bookingData.Date + ' at ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
         }
       });
 
     return true;
 });
 
-app.intent('findRoomDateBookingsIntent', {
-    'slots': {
-      'DATE': 'AMAZON.DATE',
-      'ROOM': 'LIST_OF_ROOMS'
-    },
-    'utterances': ['{find bookings in} {-|ROOM} {|on} {-|DATE}']
+app.intent('findByRoomDateIntent', {
+  'slots': {
+    'ROOM': 'LIST_OF_ROOMS',
+    'DATE': 'AMAZON.DATE'
   },
-  function(req, res){
-    var date = req.slot('DATE');
-    var room = req.slot('ROOM');
-    var dateRoom = (room + " " + date);
-    return bookedEventsTable.findAll(dateRoom)
-    .then(function(foundEvents) {
-      if (foundEvents.length === 0) {
-        res.say('There is nothing booked that day').shouldEndSession(true);
-      } else {
-        foundEvents.forEach(function(event) {
-          res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date).shouldEndSession(true);
+  'utterances': ['{-find|tell|give} {|me} {|all} {|the} {bookings|events} {in} {-|ROOM} {|on|for} {-|DATE}']},
+function(req, res){
+  var room = req.slot('ROOM');
+  var date = req.slot('DATE');
+  var roomDate = req.slot('ROOM') + ' ' + req.slot('DATE');
+  return dbHelper.readRoomDateRecords(roomDate)
+    .then(function(results) {
+      if (results.length !== 0) {
+        results.forEach(function(event) {
+          res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date + ' ').shouldEndSession(false);
         });
+      } else {
+        res.say('The ' + room + ' is free the whole day on ' + date).shouldEndSession(false);
       }
     });
 });
 
-app.intent('findNowBookingsIntent', {
+app.intent('findByNowInRoomIntent', {
     'slots': {
       'ROOM': 'LIST_OF_ROOMS'
   },
-    'utterances': ['{-|find } {what is on now|what\'s on now|what is going on now|what\'s going on now} {in} {-|ROOM}']
+    'utterances': ['{-|find|tell|give} {|me} {what is on now|what\'s on now|what is going on now|what\'s going on now} {in} {-|ROOM}']
 },
   function(req, res) {
     var date = new Date().toISOString().slice(0,10);
     var room = req.slot('ROOM');
-    var dateRoom = (room + " " + date);
-    return bookedEventsTable.findAll(dateRoom)
+    var roomDate = (room + " " + date);
+
+    return dbHelper.readRoomDateRecords(roomDate)
     .then(function(foundEvents) {
       if (foundEvents.length === 0) {
         res.say(room + ' is currently available').shouldEndSession(true);
       } else {
-        var timeCheck = foundEvents.find(function(event){
+        var ongoingEvent = foundEvents.find(function(event){
           var now = moment();
           var start = moment(new Date().toISOString().slice(0,10) + " " + event.StartTime);
           var duration = moment.duration(event.Duration, moment.ISO_8601).asMinutes();
@@ -231,18 +188,13 @@ app.intent('findNowBookingsIntent', {
             return event;
           }
         });
-
-        if (timeCheck !== undefined) {
-          var stringDuration = moment.duration(timeCheck.Duration, moment.ISO_8601).asMinutes();
-          res.say(timeCheck.RoomName + ' is booked for ' + timeCheck.Name + ' at ' + timeCheck.StartTime + ' for ' + stringDuration + ' minutes.').shouldEndSession(true);
-        } else {
-          res.say(timeCheck.RoomName + ' is currently available').shouldEndSession(true);
-        }
+        var stringDuration = moment.duration(ongoingEvent.Duration, moment.ISO_8601).asMinutes();
+        res.say(ongoingEvent.RoomName + ' is booked from ' + ongoingEvent.StartTime + ' for ' + stringDuration + ' minutes for ' + ongoingEvent.Name).shouldEndSession(true);
       }
     });
 });
 
-app.intent('findByTimeIntent', {
+app.intent('findByTimeDateInRoomIntent', {
   'slots': {
     'TIME': 'AMAZON.TIME',
     'ROOM': 'LIST_OF_ROOMS',
@@ -254,14 +206,14 @@ app.intent('findByTimeIntent', {
     var time = req.slot('TIME');
     var date2 = req.slot('DATE');
     var room = req.slot('ROOM');
-    var dateRoom = (room + " " + date2);
-    return bookedEventsTable.findAll(dateRoom)
+    var roomDate = (room + " " + date2);
+
+    return dbHelper.readRoomDateRecords(roomDate)
     .then(function(foundEvents) {
       if (foundEvents.length === 0) {
         res.say(room + ' is available at ' + time + ' on ' + date2).shouldEndSession(true);
       } else {
-
-        var timeCheck = foundEvents.find(function(event){
+        var ongoingEvent = foundEvents.find(function(event){
           var searchTime = moment(new Date(date2).toISOString().slice(0,10) + " " + time);
           var start = moment(new Date(event.Date).toISOString().slice(0,10) + " " + event.StartTime);
           var duration = moment.duration(event.Duration, moment.ISO_8601).asMinutes();
@@ -270,11 +222,34 @@ app.intent('findByTimeIntent', {
             return event;
           }
         });
-        if (timeCheck !== undefined) {
-          res.say(timeCheck.RoomName + ' is booked on ' + timeCheck.Date + ' at ' + timeCheck.StartTime + ' for ' + timeCheck.Name).shouldEndSession(true);
+        if (ongoingEvent !== undefined) {
+          var stringDuration = moment.duration(ongoingEvent.Duration, moment.ISO_8601).asMinutes();
+          res.say(ongoingEvent.RoomName + ' is booked on ' + ongoingEvent.Date + ' from ' + ongoingEvent.StartTime + ' for ' + stringDuration + ' minutes for ' + ongoingEvent.Name).shouldEndSession(true);
         } else {
-          res.say(timeCheck.RoomName + ' is available on ' + date2 + ' at ' + time).shouldEndSession(true);
+          res.say(room + ' is available on ' + date2 + ' at ' + time).shouldEndSession(true);
         }
+      }
+    });
+});
+
+app.intent('deleteBookingIntent', {
+  'slots': {
+    'NAME': 'DESCRIPTION',
+    'ROOM': 'LIST_OF_ROOMS',
+    'DATE': 'AMAZON.DATE'
+  },
+  'utterances': ['{remove|delete|cancel} {-|NAME} {from} {-|ROOM} {|on|for} {-|DATE}']},
+function(req, res) {
+  var eventName = req.slot('NAME');
+  var eventRoom = req.slot('ROOM');
+  var eventDate = req.slot('DATE');
+  var roomDate = req.slot('ROOM') + ' ' + req.slot('DATE');
+  return dbHelper.deleteRoomDateRecord(roomDate, eventName)
+    .then(function(deletedEvents) {
+      if (deletedEvents === 0) {
+        res.say('Sorry, I could find nothing to delete');
+      } else {
+        res.say(eventName + ' from ' + eventRoom + ' on ' + eventDate + ' has been deleted').shouldEndSession(false);
       }
     });
 });

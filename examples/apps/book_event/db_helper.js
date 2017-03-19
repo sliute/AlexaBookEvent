@@ -63,8 +63,8 @@ DbHelper.prototype.addRecord = function(record) {
   //   .catch(function(error){console.log(error);});
 };
 
-DbHelper.prototype.readRoomDateRecords = function(roomdate) {
-  return bookedEventsTable().findAll(roomdate)
+DbHelper.prototype.readRoomDateRecords = function(roomDate) {
+  return bookedEventsTable().findAll(roomDate)
     .then(function(records) {
       return records;
     })
