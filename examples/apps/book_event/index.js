@@ -36,9 +36,32 @@ var createBookedEventsTable = function() {
 
 var bookedEventsTable = dynasty.table(EVENTS_TABLE_NAME);
 
+
 app.pre = function(request, response, type) {
   createBookedEventsTable();
 };
+
+
+var cancelIntentFunction = function(req, res) {
+  res.say('Sayonara!').shouldEndSession(true);
+};
+
+app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
+app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
+
+app.launch(function(req, res) {
+  var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time you like, but you can never leave';
+  var cardText = {
+		"type": "Standard",
+		"title": "Makers Room",
+		"text": "Welcome to Makers Room.  To find out whether a room is currently booked, ask Alexa 'What's on now?'",
+    "image": {
+      "smallImageUrl": "https://pbs.twimg.com/profile_images/3087236754/91e379b7e0006d38ee0526946a38a1ea_400x400.png"
+    }
+  };
+  res.card(cardText);
+  res.say(prompt).reprompt(prompt).shouldEndSession(false);
+});
 
 app.intent('addHardCodedBookingIntent', {}, function(req, res){
   bookedEventsTable.insert({
@@ -74,7 +97,7 @@ app.intent('addHardCodedBookingIntent', {}, function(req, res){
 });
 
 app.intent('seeRoomDateBookingsIntent', {}, function(req, res){
-  return bookedEventsTable.findAll('Joy Room 2017-03-17')
+  return bookedEventsTable.findAll('Living Room 2017-03-20')
     .then(function(foundEvents) {
       foundEvents.forEach(function(event) {
         res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date).shouldEndSession(false);
@@ -97,45 +120,6 @@ app.intent('deleteBookingIntent', {}, function(req, res) {
         res.say('Nothing found');
       }
     })
-})
-
-app.launch(function(req, res) {
-  bookings.Items = [];
-  bookings.Items.push({
-		"RoomName": "Joy Room",
-		"Owner": "Dana",
-		"Name": "Yoga Class",
-		"Date": "2017-03-17",
-		"StartTime": "17:00",
-		"Duration": "PT60M"
-	}, {
-		"RoomName": "Rooster Blood Room",
-		"Owner": "Papillon",
-		"Name": "Voodoo Academy",
-		"Date": "2017-03-13",
-		"StartTime": "16:00",
-		"Duration": "PT45M"
-	}, {
-		"RoomName": "Living Room",
-		"Owner": "Evgeny",
-		"Name": "CEO Stuff",
-		"Date": "2017-03-13",
-		"StartTime": "15:00",
-		"Duration": "PT15M"
-	});
-  var json = JSON.stringify(bookings);
-  fs.writeFile('/tmp/bookings.json', json, 'utf8');
-  var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time you like, but you can never leave';
-  var cardText = {
-		"type": "Standard",
-		"title": "Makers Room",
-		"text": "Welcome to Makers Room.  To find out whether a room is currently booked, ask Alexa 'What's on now?'",
-    "image": {
-      "smallImageUrl": "https://pbs.twimg.com/profile_images/3087236754/91e379b7e0006d38ee0526946a38a1ea_400x400.png"
-    }
-  };
-  res.card(cardText);
-  res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
 app.intent('dateBookingIntent', {
@@ -226,63 +210,22 @@ app.intent('ownerBookingIntent', {
 },
   function(req, res) {
     var owner = req.slot('OWNER');
-
     var session = req.getSession();
     session.set("Owner", owner);
     var bookingData = res.sessionObject.attributes;
+    session.set("RoomDate", bookingData.RoomName + " " + bookingData.Date);
+    var bookingDataComplete = res.sessionObject.attributes;
+    console.log(bookingDataComplete);
+    bookedEventsTable.insert(bookingDataComplete);
     var stringDuration = moment.duration(bookingData.Duration, moment.ISO_8601).asMinutes();
     res.say('Thanks' + owner + '. You have booked the' + bookingData.RoomName + ' for ' + bookingData.Date + ' at ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
     return true;
 });
 
-app.intent('oldBookingIntent', {
-  'slots': {
-    'TIME': 'AMAZON.TIME'
-  },
-  'utterances': ['{booking time is} {-|TIME}']
-},
-  function(req, res) {
-    var time = req.slot('TIME');
-
-    // Using sessions instead...
-
-    var session = req.getSession();
-    session.set("StartTime", time);
-    console.log(res.sessionObject.attributes);
-
-    ////
-
-    fs.readFile('/tmp/bookings.json', 'utf8', function(err, data){
-      if (err) {
-        console.log(err);
-      } else {
-        bookings = JSON.parse(data);
-        bookings.Items.push(newEvent);
-        var json = JSON.stringify(bookings);
-        fs.writeFile('/tmp/bookings.json', json, 'utf8');
-      }
-    });
-    var cardText = {
-      "type": "Simple",
-      "title": "Room Booked",
-      "content": "The room has been booked for " + title,
-    };
-    res.card(cardText);
-    res.say('Room is booked for ' + title).shouldEndSession(false);
-    return true;
-});
-
-var cancelIntentFunction = function(req, res) {
-  res.say('Sayonara!').shouldEndSession(true);
-};
-
-app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
-app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
-
 app.intent('GetByDayIntent', {
   'slots': {
     'DATE': 'AMAZON.DATE'
-  }, 
+  },
   'utterances': ['{what is on|what\'s on|what is on on|what\'s on on} {-|DATE}']
 },
   function (req, res) {
