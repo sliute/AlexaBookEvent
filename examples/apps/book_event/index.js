@@ -134,7 +134,7 @@ app.intent('ownerBookingIntent', {
         if (overlaps) {
           res.say('Sorry, the room is booked at that time').shouldEndSession(false);
         } else {
-          res.say('Thanks ' + owner + '. You have booked the' + bookingData.RoomName + ' for ' + bookingData.Date + ' at ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
+          res.say('Thanks ' + owner + ' You have booked the ' + bookingData.RoomName + ' for ' + bookingData.Date + ' from ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
         }
       });
 
@@ -163,7 +163,7 @@ function(req, res){
     });
 });
 
-app.intent('findByNowInRoomIntent', {
+app.intent('findByRoomWithNowIntent', {
     'slots': {
       'ROOM': 'LIST_OF_ROOMS'
   },
@@ -174,27 +174,18 @@ app.intent('findByNowInRoomIntent', {
     var room = req.slot('ROOM');
     var roomDate = (room + " " + date);
 
-    return dbHelper.readRoomDateRecords(roomDate)
-    .then(function(foundEvents) {
-      if (foundEvents.length === 0) {
-        res.say(room + ' is currently available').shouldEndSession(true);
-      } else {
-        var ongoingEvent = foundEvents.find(function(event){
-          var now = moment();
-          var start = moment(new Date().toISOString().slice(0,10) + " " + event.StartTime);
-          var duration = moment.duration(event.Duration, moment.ISO_8601).asMinutes();
-          var end = start.clone().add(duration, 'minutes');
-          if (start <= now && now <= end) {
-            return event;
-          }
-        });
+    return dbHelper.readRoomDateRecordsForNow(roomDate)
+    .then(function(ongoingEvent) {
+      if (ongoingEvent !== undefined) {
         var stringDuration = moment.duration(ongoingEvent.Duration, moment.ISO_8601).asMinutes();
         res.say(ongoingEvent.RoomName + ' is booked from ' + ongoingEvent.StartTime + ' for ' + stringDuration + ' minutes for ' + ongoingEvent.Name).shouldEndSession(true);
+      } else {
+        res.say(room + ' is currently available').shouldEndSession(true);
       }
     });
 });
 
-app.intent('findByTimeDateInRoomIntent', {
+app.intent('findByRoomWithTimeAndDateIntent', {
   'slots': {
     'TIME': 'AMAZON.TIME',
     'ROOM': 'LIST_OF_ROOMS',
@@ -208,26 +199,13 @@ app.intent('findByTimeDateInRoomIntent', {
     var room = req.slot('ROOM');
     var roomDate = (room + " " + date2);
 
-    return dbHelper.readRoomDateRecords(roomDate)
-    .then(function(foundEvents) {
-      if (foundEvents.length === 0) {
-        res.say(room + ' is available at ' + time + ' on ' + date2).shouldEndSession(true);
+    return dbHelper.readRoomDateRecordsForTime(roomDate, date2, time)
+    .then(function(ongoingEvent) {
+      if (ongoingEvent !== undefined) {
+        var stringDuration = moment.duration(ongoingEvent.Duration, moment.ISO_8601).asMinutes();
+        res.say(ongoingEvent.RoomName + ' is booked from ' + ongoingEvent.StartTime + ' for ' + stringDuration + ' minutes for ' + ongoingEvent.Name).shouldEndSession(true);
       } else {
-        var ongoingEvent = foundEvents.find(function(event){
-          var searchTime = moment(new Date(date2).toISOString().slice(0,10) + " " + time);
-          var start = moment(new Date(event.Date).toISOString().slice(0,10) + " " + event.StartTime);
-          var duration = moment.duration(event.Duration, moment.ISO_8601).asMinutes();
-          var end = start.clone().add(duration, 'minutes');
-          if (start <= searchTime && searchTime <= end) {
-            return event;
-          }
-        });
-        if (ongoingEvent !== undefined) {
-          var stringDuration = moment.duration(ongoingEvent.Duration, moment.ISO_8601).asMinutes();
-          res.say(ongoingEvent.RoomName + ' is booked on ' + ongoingEvent.Date + ' from ' + ongoingEvent.StartTime + ' for ' + stringDuration + ' minutes for ' + ongoingEvent.Name).shouldEndSession(true);
-        } else {
-          res.say(room + ' is available on ' + date2 + ' at ' + time).shouldEndSession(true);
-        }
+        res.say(room + ' is available on ' + date2 + ' at ' + time).shouldEndSession(true);
       }
     });
 });
@@ -247,14 +225,14 @@ function(req, res) {
   return dbHelper.deleteRoomDateRecord(roomDate, eventName)
     .then(function(deletedEvents) {
       if (deletedEvents === 0) {
-        res.say('Sorry, I could find nothing to delete');
+        res.say('Sorry, there was no such booking to cancel');
       } else {
         res.say(eventName + ' from ' + eventRoom + ' on ' + eventDate + ' has been deleted').shouldEndSession(false);
       }
     });
 });
 
-app.intent('addHardCodedBookingsIntent', {}, function(req, res){
+app.intent('addThreeSampleBookingsIntent', {}, function(req, res){
   dbHelper.addRecord({
     "RoomDate": "Joy Room 2017-03-17",
 		"RoomName": "Joy Room",
@@ -285,7 +263,7 @@ app.intent('addHardCodedBookingsIntent', {}, function(req, res){
 		"Duration": "PT60M"
 	});
 
-  res.say('Three hard-coded bookings created!').shouldEndSession(false);
+  res.say('You have added three sample bookings!').shouldEndSession(false);
 });
 
 module.exports = app;
