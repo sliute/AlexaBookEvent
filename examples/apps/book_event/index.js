@@ -169,9 +169,17 @@ app.intent('ownerBookingIntent', {
     var bookingData = res.sessionObject.attributes;
     session.set("RoomDate", bookingData.RoomName + " " + bookingData.Date);
     var bookingDataComplete = res.sessionObject.attributes;
-    dbHelper.addRecord(bookingDataComplete);
     var stringDuration = moment.duration(bookingData.Duration, moment.ISO_8601).asMinutes();
-    res.say('Thanks' + owner + '. You have booked the' + bookingData.RoomName + ' for ' + bookingData.Date + ' at ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
+
+    return dbHelper.addRecord(bookingDataComplete)
+      .then(function(overlaps) {
+        if (overlaps) {
+          res.say('Sorry, the room is booked at that time').shouldEndSession(false);
+        } else {
+          res.say('Thanks' + owner + '. You have booked the' + bookingData.RoomName + ' for ' + bookingData.Date + ' at ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
+        }
+      });
+
     return true;
 });
 

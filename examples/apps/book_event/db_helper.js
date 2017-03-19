@@ -20,6 +20,16 @@ var bookedEventsTable = function() {
   return dynasty.table(EVENTS_TABLE_NAME);
 };
 
+var overlap = function(r1, r2) {
+  var start1 = moment(r1.Date + " " + r1.StartTime);
+  var start2 = moment(r2.Date + " " + r2.StartTime);
+  var duration1 = moment.duration(r1.Duration, moment.ISO_8601).asMinutes();
+  var duration2 = moment.duration(r2.Duration, moment.ISO_8601).asMinutes();
+  var end1 = start1.clone().add(duration1, 'minutes');
+  var end2 = start2.clone().add(duration1, 'minutes');
+  return (Math.max(start1, start2) < Math.min(end1, end2));
+};
+
 DbHelper.prototype.createBookedEventsTable = function() {
   return dynasty.describe(EVENTS_TABLE_NAME)
     .catch(function(error) {
@@ -34,9 +44,23 @@ DbHelper.prototype.createBookedEventsTable = function() {
 };
 
 DbHelper.prototype.addRecord = function(record) {
-  return bookedEventsTable()
-    .insert(record)
-    .catch(function(error){console.log(error);});
+  return bookedEventsTable().findAll(record.RoomDate)
+    .then(function(dayRecords){
+      var overlaps = 0;
+      dayRecords.forEach(function(dayRecord) {
+        if (overlap(dayRecord, record)) {
+          overlaps += 1
+        }
+      });
+      if (overlaps === 0) {
+        bookedEventsTable().insert(record)
+      }
+      return overlaps;
+    });
+
+  // return bookedEventsTable()
+  //   .insert(record)
+  //   .catch(function(error){console.log(error);});
 };
 
 DbHelper.prototype.readRoomDateRecords = function(roomdate) {
@@ -65,27 +89,5 @@ DbHelper.prototype.deleteRoomDateRecord = function(roomDate, eventName) {
       console.log(error);
     });
 };
-
-// BookingManager.prototype.storeBookEventData = function(userId, bookEventData) {
-//   console.log("writing bookEventData to database for user " + userId);
-//   return bookEventTable().insert({
-//     userId: userId,
-//     data: JSON.stringify(bookEventData)
-//   }).catch(function(error) {
-//     console.log(error);
-//   });
-// };
-//
-// BookingManager.prototype.readBookEventData = function(userId) {
-//   console.log("reading bookEventData from database for user " + userId);
-//   return bookEventTable().find(userId)
-//     .then(function(result) {
-//       var data = (result === undefined ? {} : JSON.parse(result["data"]));
-//       return new BookingManager(data);
-//     })
-//     .catch(function(error) {
-//       console.log(error);
-//     });
-// };
 
 module.exports = DbHelper;
