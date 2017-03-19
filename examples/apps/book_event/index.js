@@ -125,7 +125,6 @@ app.launch(function(req, res) {
 	});
   var json = JSON.stringify(bookings);
   fs.writeFile('/tmp/bookings.json', json, 'utf8');
-
   var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time you like, but you can never leave';
   var cardText = {
 		"type": "Standard",
@@ -139,21 +138,119 @@ app.launch(function(req, res) {
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
-app.intent('createBookingIntent', {
+app.intent('dateBookingIntent', {
   'slots': {
-    'TITLE': 'DESCRIPTION',
     'DATE': 'AMAZON.DATE',
-    'TIME': 'AMAZON.TIME',
-    'OWNER': 'LIST_OF_MAKERS',
-    'DURATION': 'AMAZON.DURATION'
   },
-  'utterances': ['{book room|create booking|call booking} {|for} {-|TITLE}']
+  'utterances': ['{create|make|start} {|a} {booking|new booking} {|on|for} {-|DATE}']
 },
   function(req, res) {
-    var title = req.slot('TITLE');
-    var newEvent = {
-  		"Name": title,
-  	};
+    var date = req.slot('DATE');
+
+    var session = req.getSession();
+    session.set("Date", date);
+
+    res.say('You are making a booking for ' + date + '. Which room would you like to book?').shouldEndSession(false);
+    return true;
+});
+
+app.intent('roomBookingIntent', {
+  'slots': {
+    'ROOM': 'LIST_OF_ROOMS',
+  },
+  'utterances': ['{|book} {-|ROOM}']
+},
+  function(req, res) {
+    var room = req.slot('ROOM');
+
+    var session = req.getSession();
+    session.set("RoomName", room);
+
+    res.say('You are booking ' + room + '. What time would you like to book' + room + '?').shouldEndSession(false);
+    return true;
+});
+
+app.intent('timeBookingIntent', {
+  'slots': {
+    'TIME': 'AMAZON.TIME',
+  },
+  'utterances': ['{|book} {|for|at} {-|TIME}']
+},
+  function(req, res) {
+    var time = req.slot('TIME');
+
+    var session = req.getSession();
+    session.set("StartTime", time);
+
+    res.say('You are booking the room at ' + time + '. How long would you like to book it for?').shouldEndSession(false);
+    return true;
+});
+
+app.intent('durationBookingIntent', {
+  'slots': {
+    'DURATION': 'AMAZON.DURATION',
+  },
+  'utterances': ['{|book} {|for} {-|DURATION}']
+},
+  function(req, res) {
+    var duration = req.slot('DURATION');
+    var stringDuration = moment.duration(duration, moment.ISO_8601).asMinutes();
+    var session = req.getSession();
+    session.set("Duration", duration);
+
+    res.say('You are booking the room for ' + stringDuration + 'minutes. What is the name of your event?').shouldEndSession(false);
+    return true;
+});
+
+app.intent('nameBookingIntent', {
+  'slots': {
+    'NAME': 'DESCRIPTION',
+  },
+  'utterances': ['{|my event is called} {-|NAME}']
+},
+  function(req, res) {
+    var name = req.slot('NAME');
+
+    var session = req.getSession();
+    session.set("Name", name);
+
+    res.say('You are booking the room for ' + name + '. Finally, What is your name?').shouldEndSession(false);
+    return true;
+});
+
+app.intent('ownerBookingIntent', {
+  'slots': {
+    'OWNER': 'LIST_OF_MAKERS',
+  },
+  'utterances': ['{|my name is} {-|OWNER}']
+},
+  function(req, res) {
+    var owner = req.slot('OWNER');
+
+    var session = req.getSession();
+    session.set("Owner", owner);
+    var bookingData = res.sessionObject.attributes;
+    var stringDuration = moment.duration(bookingData.Duration, moment.ISO_8601).asMinutes();
+    res.say('Thanks' + owner + '. You have booked the' + bookingData.RoomName + ' for ' + bookingData.Date + ' at ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
+    return true;
+});
+
+app.intent('oldBookingIntent', {
+  'slots': {
+    'TIME': 'AMAZON.TIME'
+  },
+  'utterances': ['{booking time is} {-|TIME}']
+},
+  function(req, res) {
+    var time = req.slot('TIME');
+
+    // Using sessions instead...
+
+    var session = req.getSession();
+    session.set("StartTime", time);
+    console.log(res.sessionObject.attributes);
+
+    ////
 
     fs.readFile('/tmp/bookings.json', 'utf8', function(err, data){
       if (err) {
