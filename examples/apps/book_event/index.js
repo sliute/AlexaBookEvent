@@ -10,7 +10,6 @@ var moment = require('moment');
 // var DBHelper = require('./db_helper');
 // var dbHelper = new DBHelper();
 
-
 var EVENTS_TABLE_NAME = 'BookedEvents';
 // var dynasty = require('dynasty')(credentials);
 var localUrl = 'http://localhost:8000';
@@ -28,8 +27,8 @@ var createBookedEventsTable = function() {
       console.log("createBookEventTable::error: ", error);
       return dynasty.create(EVENTS_TABLE_NAME, {
         key_schema: {
-          hash: ['RoomDate', 'string']
-          // range: ['Date', 'string']
+          hash: ['RoomDate', 'string'],
+          range: ['Name', 'string']
         }
       });
     });
@@ -82,6 +81,23 @@ app.intent('seeRoomDateBookingsIntent', {}, function(req, res){
       });
     });
 });
+
+app.intent('deleteBookingIntent', {}, function(req, res) {
+  return bookedEventsTable.findAll('Joy Room 2017-03-22')
+    .then(function(foundEvents) {
+      var deletedEvents = 0;
+      foundEvents.forEach(function(event) {
+        if (event.Name === 'Yoga Class 03') {
+          bookedEventsTable.remove({hash: 'Joy Room 2017-03-22', range: 'Yoga Class 03'})
+          deletedEvents += 1
+          res.say(event.Name + ' has been deleted');
+        }
+      })
+      if (deletedEvents === 0) {
+        res.say('Nothing found');
+      }
+    })
+})
 
 app.launch(function(req, res) {
   bookings.Items = [];
