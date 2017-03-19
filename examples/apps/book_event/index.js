@@ -238,7 +238,10 @@ app.intent('findRoomDateBookingsIntent', {
     });
 });
 
-app.intent('GetNowIntent', {
+app.intent('findNowBookingsIntent', {
+  'slots': {
+    'ROOM': 'LIST_OF_ROOMS'
+  },
   'utterances': ['{what is on now|what\'s on now|what is going on now|what\'s going on now}']
 },
   function(req, res) {
