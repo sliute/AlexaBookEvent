@@ -83,11 +83,18 @@ app.intent('createBookingIntent', {
   		"Name": title,
   	});
 
+    // Using sessions instead...
+
+    var session = req.getSession();
+    session.set("Name", title);
+
+    ////
+
     res.say('You are booking the room for ' + title + 'Now say, booking time is and the time of your choice').shouldEndSession(false);
     return true;
 });
 
-app.intent('dateBookingIntent', {
+app.intent('timeBookingIntent', {
   'slots': {
     'TIME': 'AMAZON.TIME'
   },
@@ -99,6 +106,14 @@ app.intent('dateBookingIntent', {
   		"StartTime": time,
   	});
 
+    // Using sessions instead...
+
+    var session = req.getSession();
+    session.set("StartTime", time);
+    console.log(res.sessionObject.attributes);
+
+    ////
+
     fs.readFile('/tmp/bookings.json', 'utf8', function(err, data){
       if (err) {
         console.log(err);
@@ -109,7 +124,7 @@ app.intent('dateBookingIntent', {
         fs.writeFile('/tmp/bookings.json', json, 'utf8');
       }
     })
-    console.log(newEvent);
+
     res.say('Room is booked for '+ newEvent[0].Name + ' at' + time).shouldEndSession(false);
     return true;
 });
