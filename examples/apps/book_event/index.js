@@ -127,6 +127,15 @@ app.launch(function(req, res) {
   fs.writeFile('/tmp/bookings.json', json, 'utf8');
 
   var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time you like, but you can never leave';
+  var cardText = {
+		"type": "Standard",
+		"title": "Makers Room",
+		"text": "Welcome to Makers Room.  To find out whether a room is currently booked, ask Alexa 'What's on now?'",
+    "image": {
+      "smallImageUrl": "https://pbs.twimg.com/profile_images/3087236754/91e379b7e0006d38ee0526946a38a1ea_400x400.png"
+    }
+  };
+  res.card(cardText);
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
@@ -155,8 +164,13 @@ app.intent('createBookingIntent', {
         var json = JSON.stringify(bookings);
         fs.writeFile('/tmp/bookings.json', json, 'utf8');
       }
-    })
-
+    });
+    var cardText = {
+      "type": "Simple",
+      "title": "Room Booked",
+      "content": "The room has been booked for " + title,
+    };
+    res.card(cardText);
     res.say('Room is booked for ' + title).shouldEndSession(false);
     return true;
 });
@@ -171,7 +185,7 @@ app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
 app.intent('GetByDayIntent', {
   'slots': {
     'DATE': 'AMAZON.DATE'
-  },
+  }, 
   'utterances': ['{what is on|what\'s on|what is on on|what\'s on on} {-|DATE}']
 },
   function (req, res) {
