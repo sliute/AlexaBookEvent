@@ -2,7 +2,8 @@
 module.change_code = 1;
 var _ = require('lodash');
 var EVENTS_TABLE_NAME = 'BookedEvents';
-// var dynasty = require('dynasty')(credentials);
+
+// var dynasty = require('dynasty')({});
 var localUrl = 'http://localhost:8000';
 var localCredentials = {
   region: 'us-east-1',
@@ -12,20 +13,38 @@ var localCredentials = {
 var localDynasty = require('dynasty')(localCredentials, localUrl);
 var dynasty = localDynasty;
 
-function BookingManager() {}
+function DbHelper() {}
 
-var bookedEventsTable = function() { return dynasty.table(EVENTS_TABLE_NAME); };
+var bookedEventsTable = function() {
+  return dynasty.table(EVENTS_TABLE_NAME);
+};
 
-BookingManager.prototype.createBookedEventsTable = function() {
+DbHelper.prototype.createBookedEventsTable = function() {
   return dynasty.describe(EVENTS_TABLE_NAME)
     .catch(function(error) {
-      console.log("createBookEventTable::error: ", error);
+      console.log("createBookedEventTable::error: ", error);
       return dynasty.create(EVENTS_TABLE_NAME, {
         key_schema: {
-          hash: ['RoomName', 'string'],
-          range: ['Date', 'string']
+          hash: ['RoomDate', 'string'],
+          range: ['Name', 'string']
         }
       });
+    });
+};
+
+DbHelper.prototype.addRecord = function(record) {
+  return bookedEventsTable()
+    .insert(record)
+    .catch(function(error){console.log(error);});
+};
+
+DbHelper.prototype.readRoomDateRecords = function(roomdate) {
+  return bookedEventsTable().findAll(roomdate)
+    .then(function(records) {
+      return records;
+    })
+    .catch(function(error){
+      console.log(error);
     });
 };
 
@@ -51,4 +70,4 @@ BookingManager.prototype.createBookedEventsTable = function() {
 //     });
 // };
 
-module.exports = BookingManager;
+module.exports = DbHelper;

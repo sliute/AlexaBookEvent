@@ -3,51 +3,41 @@ module.change_code = 1;
 var _ = require('lodash')
 var Alexa = require('alexa-app');
 var app = new Alexa.app('book_event');
-var fs = require('fs');
-var bookings = {};
+// var fs = require('fs');
+// var bookings = {};
 var moment = require('moment');
+var DbHelper = require('./db_helper');
+var dbHelper = new DbHelper();
+
+// var EVENTS_TABLE_NAME = 'BookedEvents';
+// // var dynasty = require('dynasty')(credentials);
+// var localUrl = 'http://localhost:8000';
+// var localCredentials = {
+//   region: 'us-east-1',
+//   accessKeyId: 'fake',
+//   secretAccessKey: 'fake'
+// };
+// var localDynasty = require('dynasty')(localCredentials, localUrl);
+// var dynasty = localDynasty;
+
+// var createBookedEventsTable = function() {
+//   return dynasty.describe(EVENTS_TABLE_NAME)
+//     .catch(function(error) {
+//       console.log("createBookEventTable::error: ", error);
+//       return dynasty.create(EVENTS_TABLE_NAME, {
+//         key_schema: {
+//           hash: ['RoomDate', 'string'],
+//           range: ['Name', 'string']
+//         }
+//       });
+//     });
+// };
 //
-// var DBHelper = require('./db_helper');
-// var dbHelper = new DBHelper();
-
-var EVENTS_TABLE_NAME = 'BookedEvents';
-// var dynasty = require('dynasty')(credentials);
-var localUrl = 'http://localhost:8000';
-var localCredentials = {
-  region: 'us-east-1',
-  accessKeyId: 'fake',
-  secretAccessKey: 'fake'
-};
-var localDynasty = require('dynasty')(localCredentials, localUrl);
-var dynasty = localDynasty;
-
-var createBookedEventsTable = function() {
-  return dynasty.describe(EVENTS_TABLE_NAME)
-    .catch(function(error) {
-      console.log("createBookEventTable::error: ", error);
-      return dynasty.create(EVENTS_TABLE_NAME, {
-        key_schema: {
-          hash: ['RoomDate', 'string'],
-          range: ['Name', 'string']
-        }
-      });
-    });
-};
-
-var bookedEventsTable = dynasty.table(EVENTS_TABLE_NAME);
-
+// var bookedEventsTable = dynasty.table(EVENTS_TABLE_NAME);
 
 app.pre = function(request, response, type) {
-  createBookedEventsTable();
+  dbHelper.createBookedEventsTable();
 };
-
-
-var cancelIntentFunction = function(req, res) {
-  res.say('Sayonara!').shouldEndSession(true);
-};
-
-app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
-app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
 
 app.launch(function(req, res) {
   var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time you like, but you can never leave';
@@ -63,8 +53,15 @@ app.launch(function(req, res) {
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
-app.intent('addHardCodedBookingIntent', {}, function(req, res){
-  bookedEventsTable.insert({
+var cancelIntentFunction = function(req, res) {
+  res.say('Sayonara!').shouldEndSession(true);
+};
+
+app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
+app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
+
+app.intent('addHardCodedBookingsIntent', {}, function(req, res){
+  dbHelper.addRecord({
     "RoomDate": "Joy Room 2017-03-17",
 		"RoomName": "Joy Room",
 		"Owner": "Dana",
@@ -74,7 +71,7 @@ app.intent('addHardCodedBookingIntent', {}, function(req, res){
 		"Duration": "PT60M"
 	});
 
-  bookedEventsTable.insert({
+  dbHelper.addRecord({
     "RoomDate": "Living Room 2017-03-17",
 		"RoomName": "Living Room",
 		"Owner": "Dana",
@@ -84,7 +81,7 @@ app.intent('addHardCodedBookingIntent', {}, function(req, res){
 		"Duration": "PT60M"
 	});
 
-  bookedEventsTable.insert({
+  dbHelper.addRecord({
     "RoomDate": "Joy Room 2017-03-22",
 		"RoomName": "Joy Room",
 		"Owner": "Dana",
@@ -93,13 +90,14 @@ app.intent('addHardCodedBookingIntent', {}, function(req, res){
 		"StartTime": "17:00",
 		"Duration": "PT60M"
 	});
-  res.say('Booking created for Joy Room').shouldEndSession(false);
+
+  res.say('Three hard-coded bookings created!').shouldEndSession(false);
 });
 
-app.intent('seeRoomDateBookingsIntent', {}, function(req, res){
-  return bookedEventsTable.findAll('Living Room 2017-03-20')
-    .then(function(foundEvents) {
-      foundEvents.forEach(function(event) {
+app.intent('readRoomDateBookingsIntent', {}, function(req, res){
+  return dbHelper.readRoomDateRecords('Living Room 2017-03-17')
+    .then(function(results) {
+      results.forEach(function(event) {
         res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date).shouldEndSession(false);
       });
     });
