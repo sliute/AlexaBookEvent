@@ -225,7 +225,6 @@ app.intent('findRoomDateBookingsIntent', {
     var date = req.slot('DATE');
     var room = req.slot('ROOM');
     var dateRoom = (room + " " + date);
-    console.log(dateRoom);
     return bookedEventsTable.findAll(dateRoom)
     .then(function(foundEvents) {
       if (foundEvents.length === 0) {
@@ -239,35 +238,31 @@ app.intent('findRoomDateBookingsIntent', {
 });
 
 app.intent('findNowBookingsIntent', {
-  'slots': {
-    'ROOM': 'LIST_OF_ROOMS'
+    'slots': {
+      'ROOM': 'LIST_OF_ROOMS'
   },
-  'utterances': ['{what is on now|what\'s on now|what is going on now|what\'s going on now}']
+    'utterances': ['{-|find } {what is on now|what\'s on now|what is going on now|what\'s going on now} {in} {-|ROOM}']
 },
   function(req, res) {
-    var dateBookings = [];
-    bookings.Items.forEach(function(item){
-      if (new Date().toISOString().slice(0,10) === item.Date) {
-        dateBookings.push(item);
+    var date = new Date().toISOString().slice(0,10);
+    var room = req.slot('ROOM');
+    var dateRoom = (room + " " + date);
+    console.log(dateRoom);
+    return bookedEventsTable.findAll(dateRoom)
+    .then(function(foundEvents) {
+      if (foundEvents.length === 0) {
+        res.say(room + ' is currently available').shouldEndSession(true);
+      } else {
+        foundEvents.forEach(function(event) {
+          var now = moment();
+          var start = moment(new Date().toISOString().slice(0,10) + " " + event.StartTime);
+          var duration = moment.duration(event.Duration, moment.ISO_8601).asMinutes();
+          var end = start.clone().add(duration, 'minutes');
+          res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' at ' + event.StartTime + ' for ' + duration + ' minutes.').shouldEndSession(true);
+        });
       }
     });
-    var nowBooking;
-    dateBookings.forEach(function(item){
-      var now = moment();
-      var start = moment(new Date().toISOString().slice(0,10) + " " + item.StartTime);
-      var duration = moment.duration(item.Duration, moment.ISO_8601).asMinutes();
-      var end = start.clone().add(duration, 'minutes');
-      if (start <= now && now <= end) {
-        nowBooking = item;
-      }
-    });
-    if (nowBooking !== undefined) {
-      res.say(nowBooking.Owner + ' booked ' + nowBooking.Name + ' from ' + nowBooking.StartTime + ' for ' + nowBooking.Duration).shouldEndSession(false);
-    } else {
-      res.say('All rooms are free now').shouldEndSession(false);
-    }
-  }
-);
+  });
 
 app.intent('GetByTimeIntent', {
   'slots': {
