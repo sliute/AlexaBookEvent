@@ -232,8 +232,8 @@ app.intent('findRoomDateBookingsIntent', {
       } else {
         foundEvents.forEach(function(event) {
           res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date).shouldEndSession(true);
-        })
-      };
+        });
+      }
     });
 });
 
@@ -247,45 +247,66 @@ app.intent('findNowBookingsIntent', {
     var date = new Date().toISOString().slice(0,10);
     var room = req.slot('ROOM');
     var dateRoom = (room + " " + date);
-    console.log(dateRoom);
     return bookedEventsTable.findAll(dateRoom)
     .then(function(foundEvents) {
       if (foundEvents.length === 0) {
         res.say(room + ' is currently available').shouldEndSession(true);
       } else {
-        foundEvents.forEach(function(event) {
+        var timeCheck = foundEvents.find(function(event){
           var now = moment();
           var start = moment(new Date().toISOString().slice(0,10) + " " + event.StartTime);
           var duration = moment.duration(event.Duration, moment.ISO_8601).asMinutes();
           var end = start.clone().add(duration, 'minutes');
-          res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' at ' + event.StartTime + ' for ' + duration + ' minutes.').shouldEndSession(true);
+          if (start <= now && now <= end) {
+            return event;
+          }
         });
+
+        if (timeCheck !== undefined) {
+          var stringDuration = moment.duration(timeCheck.Duration, moment.ISO_8601).asMinutes();
+          res.say(timeCheck.RoomName + ' is booked for ' + timeCheck.Name + ' at ' + timeCheck.StartTime + ' for ' + stringDuration + ' minutes.').shouldEndSession(true);
+        } else {
+          res.say(timeCheck.RoomName + ' is currently available').shouldEndSession(true);
+        }
       }
     });
-  });
+});
 
-app.intent('GetByTimeIntent', {
+app.intent('findByTimeIntent', {
   'slots': {
     'TIME': 'AMAZON.TIME',
+    'ROOM': 'LIST_OF_ROOMS',
     'DATE': 'AMAZON.DATE'
   },
-  'utterances': ['{what is on at|what\'s on at } {-|TIME} {-|DATE}']
+  'utterances': ['{find} {what is on at|what\'s on at } {-|TIME} {|on} {-|DATE} {in} {-|ROOM}']
 },
   function (req, res) {
     var time = req.slot('TIME');
     var date2 = req.slot('DATE');
+    var room = req.slot('ROOM');
+    var dateRoom = (room + " " + date2);
+    return bookedEventsTable.findAll(dateRoom)
+    .then(function(foundEvents) {
+      if (foundEvents.length === 0) {
+        res.say(room + ' is available at ' + time + ' on ' + date2).shouldEndSession(true);
+      } else {
 
-    var timeCheck = bookings.Items.find(function(item){
-      if (time === item.StartTime && item.Date === date2) {
-        return item;
+        var timeCheck = foundEvents.find(function(event){
+          var searchTime = moment(new Date(date2).toISOString().slice(0,10) + " " + time);
+          var start = moment(new Date(event.Date).toISOString().slice(0,10) + " " + event.StartTime);
+          var duration = moment.duration(event.Duration, moment.ISO_8601).asMinutes();
+          var end = start.clone().add(duration, 'minutes');
+          if (start <= searchTime && searchTime <= end) {
+            return event;
+          }
+        });
+        if (timeCheck !== undefined) {
+          res.say(timeCheck.RoomName + ' is booked on ' + timeCheck.Date + ' at ' + timeCheck.StartTime + ' for ' + timeCheck.Name).shouldEndSession(true);
+        } else {
+          res.say(timeCheck.RoomName + ' is available on ' + date2 + ' at ' + time).shouldEndSession(true);
+        }
       }
     });
-    if (timeCheck !== undefined) {
-      res.say(timeCheck.Owner + ' booked ' + timeCheck.RoomName + ' for ' + timeCheck.Name + ' from ' + timeCheck.StartTime + ' for ' + timeCheck.Duration).shouldEndSession(false);
-    } else {
-      res.say('All rooms are free at ' + time + ' ' + date2).shouldEndSession(false);
-    }
-}
-);
+});
 
 module.exports = app;
