@@ -1,6 +1,7 @@
 'use strict';
 module.change_code = 1;
 var _ = require('lodash');
+var moment = require('moment');
 var EVENTS_TABLE_NAME = 'BookedEvents';
 
 // var dynasty = require('dynasty')({});
@@ -51,16 +52,13 @@ DbHelper.prototype.readRoomDateRecords = function(roomdate) {
 DbHelper.prototype.deleteRoomDateRecord = function(roomDate, eventName) {
   return bookedEventsTable().findAll(roomDate)
     .then(function(records) {
-
       var deletedEvents = 0;
-
       records.forEach(function(record) {
         if (record.Name === eventName) {
           bookedEventsTable().remove({hash: roomDate, range: eventName})
           deletedEvents += 1
         }
       });
-
       return deletedEvents;
     })
     .catch(function(error){

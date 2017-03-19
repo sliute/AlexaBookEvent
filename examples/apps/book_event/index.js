@@ -3,37 +3,9 @@ module.change_code = 1;
 var _ = require('lodash')
 var Alexa = require('alexa-app');
 var app = new Alexa.app('book_event');
-// var fs = require('fs');
-// var bookings = {};
 var moment = require('moment');
 var DbHelper = require('./db_helper');
 var dbHelper = new DbHelper();
-
-// var EVENTS_TABLE_NAME = 'BookedEvents';
-// // var dynasty = require('dynasty')(credentials);
-// var localUrl = 'http://localhost:8000';
-// var localCredentials = {
-//   region: 'us-east-1',
-//   accessKeyId: 'fake',
-//   secretAccessKey: 'fake'
-// };
-// var localDynasty = require('dynasty')(localCredentials, localUrl);
-// var dynasty = localDynasty;
-
-// var createBookedEventsTable = function() {
-//   return dynasty.describe(EVENTS_TABLE_NAME)
-//     .catch(function(error) {
-//       console.log("createBookEventTable::error: ", error);
-//       return dynasty.create(EVENTS_TABLE_NAME, {
-//         key_schema: {
-//           hash: ['RoomDate', 'string'],
-//           range: ['Name', 'string']
-//         }
-//       });
-//     });
-// };
-//
-// var bookedEventsTable = dynasty.table(EVENTS_TABLE_NAME);
 
 app.pre = function(request, response, type) {
   dbHelper.createBookedEventsTable();
@@ -60,56 +32,46 @@ var cancelIntentFunction = function(req, res) {
 app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
 app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
 
-app.intent('addHardCodedBookingsIntent', {}, function(req, res){
-  dbHelper.addRecord({
-    "RoomDate": "Joy Room 2017-03-17",
-		"RoomName": "Joy Room",
-		"Owner": "Dana",
-		"Name": "Yoga Class 01",
-		"Date": "2017-03-17",
-		"StartTime": "17:00",
-		"Duration": "PT60M"
-	});
-
-  dbHelper.addRecord({
-    "RoomDate": "Living Room 2017-03-17",
-		"RoomName": "Living Room",
-		"Owner": "Dana",
-		"Name": "Yoga Class 02",
-		"Date": "2017-03-17",
-		"StartTime": "17:00",
-		"Duration": "PT60M"
-	});
-
-  dbHelper.addRecord({
-    "RoomDate": "Joy Room 2017-03-22",
-		"RoomName": "Joy Room",
-		"Owner": "Dana",
-		"Name": "Yoga Class 03",
-		"Date": "2017-03-22",
-		"StartTime": "17:00",
-		"Duration": "PT60M"
-	});
-
-  res.say('Three hard-coded bookings created!').shouldEndSession(false);
-});
-
-app.intent('readRoomDateBookingsIntent', {}, function(req, res){
-  return dbHelper.readRoomDateRecords('Living Room 2017-03-17')
+app.intent('readRoomDateBookingsIntent', {
+  'slots': {
+    'ROOM': 'LIST_OF_ROOMS',
+    'DATE': 'AMAZON.DATE'
+  },
+  'utterances': ['{tell|give} {|me} {|all} {|the} {bookings|events} {for} {-|ROOM} {|on|for} {-|DATE}']},
+function(req, res){
+  var room = req.slot('ROOM');
+  var date = req.slot('DATE');
+  var roomDate = req.slot('ROOM') + ' ' + req.slot('DATE');
+  return dbHelper.readRoomDateRecords(roomDate)
     .then(function(results) {
-      results.forEach(function(event) {
-        res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date).shouldEndSession(false);
-      });
+      if (results.length !== 0) {
+        results.forEach(function(event) {
+          res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date + ' ').shouldEndSession(false);
+        });
+      } else {
+        res.say('The ' + room + ' is free the whole day on ' + date).shouldEndSession(false);
+      }
     });
 });
 
-app.intent('deleteBookingIntent', {}, function(req, res) {
-  return dbHelper.deleteRoomDateRecord('Joy Room 2017-03-22', 'Yoga Class 03')
+app.intent('deleteBookingIntent', {
+  'slots': {
+    'NAME': 'DESCRIPTION',
+    'ROOM': 'LIST_OF_ROOMS',
+    'DATE': 'AMAZON.DATE'
+  },
+  'utterances': ['{remove|delete|cancel} {-|NAME} {from} {-|ROOM} {|on|for} {-|DATE}']},
+function(req, res) {
+  var eventName = req.slot('NAME');
+  var eventRoom = req.slot('ROOM');
+  var eventDate = req.slot('DATE');
+  var roomDate = req.slot('ROOM') + ' ' + req.slot('DATE');
+  return dbHelper.deleteRoomDateRecord(roomDate, eventName)
     .then(function(deletedEvents) {
       if (deletedEvents === 0) {
-        res.say('Nothing found');
+        res.say('Sorry, I could find nothing to delete');
       } else {
-        res.say('Yoga Class 03' + ' has been deleted');
+        res.say(eventName + ' from ' + eventRoom + ' on ' + eventDate + ' has been deleted').shouldEndSession(false);
       }
     });
 });
@@ -207,8 +169,7 @@ app.intent('ownerBookingIntent', {
     var bookingData = res.sessionObject.attributes;
     session.set("RoomDate", bookingData.RoomName + " " + bookingData.Date);
     var bookingDataComplete = res.sessionObject.attributes;
-    console.log(bookingDataComplete);
-    bookedEventsTable.insert(bookingDataComplete);
+    dbHelper.addRecord(bookingDataComplete);
     var stringDuration = moment.duration(bookingData.Duration, moment.ISO_8601).asMinutes();
     res.say('Thanks' + owner + '. You have booked the' + bookingData.RoomName + ' for ' + bookingData.Date + ' at ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
     return true;
@@ -290,5 +251,39 @@ app.intent('GetByTimeIntent', {
     }
 }
 );
+
+app.intent('addHardCodedBookingsIntent', {}, function(req, res){
+  dbHelper.addRecord({
+    "RoomDate": "Joy Room 2017-03-17",
+		"RoomName": "Joy Room",
+		"Owner": "Dana",
+		"Name": "Yoga Class 01",
+		"Date": "2017-03-17",
+		"StartTime": "17:00",
+		"Duration": "PT60M"
+	});
+
+  dbHelper.addRecord({
+    "RoomDate": "Living Room 2017-03-17",
+		"RoomName": "Living Room",
+		"Owner": "Dana",
+		"Name": "Yoga Class 02",
+		"Date": "2017-03-17",
+		"StartTime": "17:00",
+		"Duration": "PT60M"
+	});
+
+  dbHelper.addRecord({
+    "RoomDate": "Joy Room 2017-03-22",
+		"RoomName": "Joy Room",
+		"Owner": "Dana",
+		"Name": "Yoga Class 03",
+		"Date": "2017-03-22",
+		"StartTime": "17:00",
+		"Duration": "PT60M"
+	});
+
+  res.say('Three hard-coded bookings created!').shouldEndSession(false);
+});
 
 module.exports = app;
