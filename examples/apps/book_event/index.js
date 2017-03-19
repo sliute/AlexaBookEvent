@@ -94,11 +94,11 @@ app.intent('durationBookingIntent', {
 },
   function(req, res) {
     var duration = req.slot('DURATION');
-
+    var stringDuration = moment.duration(duration, moment.ISO_8601).asMinutes();
     var session = req.getSession();
     session.set("Duration", duration);
 
-    res.say('You are booking the room for ' + duration + '. What is the name of your event?').shouldEndSession(false);
+    res.say('You are booking the room for ' + stringDuration + 'minutes. What is the name of your event?').shouldEndSession(false);
     return true;
 });
 
@@ -106,7 +106,7 @@ app.intent('nameBookingIntent', {
   'slots': {
     'NAME': 'DESCRIPTION',
   },
-  'utterances': ['{|my event is called} {-|DESCRIPTION}']
+  'utterances': ['{|my event is called} {-|NAME}']
 },
   function(req, res) {
     var name = req.slot('NAME');
@@ -130,8 +130,8 @@ app.intent('ownerBookingIntent', {
     var session = req.getSession();
     session.set("Owner", owner);
     var bookingData = res.sessionObject.attributes;
-
-    res.say('Thanks' + owner + '. You have booked the' + bookingData.RoomName + ' for ' + bookingData.Date + ' at ' + bookingData.StartTime + ' for ' + bookingData.Duration + ' for ' + bookingData.Name).shouldEndSession(false);
+    var stringDuration = moment.duration(bookingData.Duration, moment.ISO_8601).asMinutes();
+    res.say('Thanks' + owner + '. You have booked the' + bookingData.RoomName + ' for ' + bookingData.Date + ' at ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
     return true;
 });
 
