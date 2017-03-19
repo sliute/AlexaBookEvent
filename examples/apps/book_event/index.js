@@ -6,6 +6,98 @@ var app = new Alexa.app('book_event');
 var fs = require('fs');
 var bookings = {};
 var moment = require('moment');
+//
+// var DBHelper = require('./db_helper');
+// var dbHelper = new DBHelper();
+
+var EVENTS_TABLE_NAME = 'BookedEvents';
+// var dynasty = require('dynasty')(credentials);
+var localUrl = 'http://localhost:8000';
+var localCredentials = {
+  region: 'us-east-1',
+  accessKeyId: 'fake',
+  secretAccessKey: 'fake'
+};
+var localDynasty = require('dynasty')(localCredentials, localUrl);
+var dynasty = localDynasty;
+
+var createBookedEventsTable = function() {
+  return dynasty.describe(EVENTS_TABLE_NAME)
+    .catch(function(error) {
+      console.log("createBookEventTable::error: ", error);
+      return dynasty.create(EVENTS_TABLE_NAME, {
+        key_schema: {
+          hash: ['RoomDate', 'string'],
+          range: ['Name', 'string']
+        }
+      });
+    });
+};
+
+var bookedEventsTable = dynasty.table(EVENTS_TABLE_NAME);
+
+app.pre = function(request, response, type) {
+  createBookedEventsTable();
+};
+
+app.intent('addHardCodedBookingIntent', {}, function(req, res){
+  bookedEventsTable.insert({
+    "RoomDate": "Joy Room 2017-03-17",
+		"RoomName": "Joy Room",
+		"Owner": "Dana",
+		"Name": "Yoga Class 01",
+		"Date": "2017-03-17",
+		"StartTime": "17:00",
+		"Duration": "PT60M"
+	});
+
+  bookedEventsTable.insert({
+    "RoomDate": "Living Room 2017-03-17",
+		"RoomName": "Living Room",
+		"Owner": "Dana",
+		"Name": "Yoga Class 02",
+		"Date": "2017-03-17",
+		"StartTime": "17:00",
+		"Duration": "PT60M"
+	});
+
+  bookedEventsTable.insert({
+    "RoomDate": "Joy Room 2017-03-22",
+		"RoomName": "Joy Room",
+		"Owner": "Dana",
+		"Name": "Yoga Class 03",
+		"Date": "2017-03-22",
+		"StartTime": "17:00",
+		"Duration": "PT60M"
+	});
+  res.say('Booking created for Joy Room').shouldEndSession(false);
+});
+
+app.intent('seeRoomDateBookingsIntent', {}, function(req, res){
+  return bookedEventsTable.findAll('Joy Room 2017-03-17')
+    .then(function(foundEvents) {
+      foundEvents.forEach(function(event) {
+        res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date).shouldEndSession(false);
+      });
+    });
+});
+
+app.intent('deleteBookingIntent', {}, function(req, res) {
+  return bookedEventsTable.findAll('Joy Room 2017-03-22')
+    .then(function(foundEvents) {
+      var deletedEvents = 0;
+      foundEvents.forEach(function(event) {
+        if (event.Name === 'Yoga Class 03') {
+          bookedEventsTable.remove({hash: 'Joy Room 2017-03-22', range: 'Yoga Class 03'})
+          deletedEvents += 1
+          res.say(event.Name + ' has been deleted');
+        }
+      })
+      if (deletedEvents === 0) {
+        res.say('Nothing found');
+      }
+    })
+})
 
 app.launch(function(req, res) {
   bookings.Items = [];
