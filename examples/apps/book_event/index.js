@@ -6,6 +6,98 @@ var app = new Alexa.app('book_event');
 var fs = require('fs');
 var bookings = {};
 var moment = require('moment');
+//
+// var DBHelper = require('./db_helper');
+// var dbHelper = new DBHelper();
+
+var EVENTS_TABLE_NAME = 'BookedEvents';
+// var dynasty = require('dynasty')(credentials);
+var localUrl = 'http://localhost:8000';
+var localCredentials = {
+  region: 'us-east-1',
+  accessKeyId: 'fake',
+  secretAccessKey: 'fake'
+};
+var localDynasty = require('dynasty')(localCredentials, localUrl);
+var dynasty = localDynasty;
+
+var createBookedEventsTable = function() {
+  return dynasty.describe(EVENTS_TABLE_NAME)
+    .catch(function(error) {
+      console.log("createBookEventTable::error: ", error);
+      return dynasty.create(EVENTS_TABLE_NAME, {
+        key_schema: {
+          hash: ['RoomDate', 'string'],
+          range: ['Name', 'string']
+        }
+      });
+    });
+};
+
+var bookedEventsTable = dynasty.table(EVENTS_TABLE_NAME);
+
+app.pre = function(request, response, type) {
+  createBookedEventsTable();
+};
+
+app.intent('addHardCodedBookingIntent', {}, function(req, res){
+  bookedEventsTable.insert({
+    "RoomDate": "Joy Room 2017-03-17",
+		"RoomName": "Joy Room",
+		"Owner": "Dana",
+		"Name": "Yoga Class 01",
+		"Date": "2017-03-17",
+		"StartTime": "17:00",
+		"Duration": "PT60M"
+	});
+
+  bookedEventsTable.insert({
+    "RoomDate": "Living Room 2017-03-17",
+		"RoomName": "Living Room",
+		"Owner": "Dana",
+		"Name": "Yoga Class 02",
+		"Date": "2017-03-17",
+		"StartTime": "17:00",
+		"Duration": "PT60M"
+	});
+
+  bookedEventsTable.insert({
+    "RoomDate": "Joy Room 2017-03-22",
+		"RoomName": "Joy Room",
+		"Owner": "Dana",
+		"Name": "Yoga Class 03",
+		"Date": "2017-03-22",
+		"StartTime": "17:00",
+		"Duration": "PT60M"
+	});
+  res.say('Booking created for Joy Room').shouldEndSession(false);
+});
+
+app.intent('seeRoomDateBookingsIntent', {}, function(req, res){
+  return bookedEventsTable.findAll('Joy Room 2017-03-17')
+    .then(function(foundEvents) {
+      foundEvents.forEach(function(event) {
+        res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date).shouldEndSession(false);
+      });
+    });
+});
+
+app.intent('deleteBookingIntent', {}, function(req, res) {
+  return bookedEventsTable.findAll('Joy Room 2017-03-22')
+    .then(function(foundEvents) {
+      var deletedEvents = 0;
+      foundEvents.forEach(function(event) {
+        if (event.Name === 'Yoga Class 03') {
+          bookedEventsTable.remove({hash: 'Joy Room 2017-03-22', range: 'Yoga Class 03'})
+          deletedEvents += 1
+          res.say(event.Name + ' has been deleted');
+        }
+      })
+      if (deletedEvents === 0) {
+        res.say('Nothing found');
+      }
+    })
+})
 
 app.launch(function(req, res) {
   bookings.Items = [];
@@ -33,8 +125,16 @@ app.launch(function(req, res) {
 	});
   var json = JSON.stringify(bookings);
   fs.writeFile('/tmp/bookings.json', json, 'utf8');
-
-  var prompt = 'Welcome to Makers Room<break time="1s"/>' +' You can check out any time you like, but you can never leave';
+  var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time you like, but you can never leave';
+  var cardText = {
+		"type": "Standard",
+		"title": "Makers Room",
+		"text": "Welcome to Makers Room.  To find out whether a room is currently booked, ask Alexa 'What's on now?'",
+    "image": {
+      "smallImageUrl": "https://pbs.twimg.com/profile_images/3087236754/91e379b7e0006d38ee0526946a38a1ea_400x400.png"
+    }
+  };
+  res.card(cardText);
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
@@ -135,11 +235,6 @@ app.intent('ownerBookingIntent', {
     return true;
 });
 
-
-
-
-
-
 app.intent('oldBookingIntent', {
   'slots': {
     'TIME': 'AMAZON.TIME'
@@ -166,9 +261,14 @@ app.intent('oldBookingIntent', {
         var json = JSON.stringify(bookings);
         fs.writeFile('/tmp/bookings.json', json, 'utf8');
       }
-    })
-
-    res.say('Room is booked for '+ newEvent[0].Name + ' at' + time).shouldEndSession(false);
+    });
+    var cardText = {
+      "type": "Simple",
+      "title": "Room Booked",
+      "content": "The room has been booked for " + title,
+    };
+    res.card(cardText);
+    res.say('Room is booked for ' + title).shouldEndSession(false);
     return true;
 });
 
@@ -182,7 +282,7 @@ app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
 app.intent('GetByDayIntent', {
   'slots': {
     'DATE': 'AMAZON.DATE'
-  },
+  }, 
   'utterances': ['{what is on|what\'s on|what is on on|what\'s on on} {-|DATE}']
 },
   function (req, res) {
