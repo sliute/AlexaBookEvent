@@ -104,20 +104,14 @@ app.intent('readRoomDateBookingsIntent', {}, function(req, res){
 });
 
 app.intent('deleteBookingIntent', {}, function(req, res) {
-  return bookedEventsTable.findAll('Joy Room 2017-03-22')
-    .then(function(foundEvents) {
-      var deletedEvents = 0;
-      foundEvents.forEach(function(event) {
-        if (event.Name === 'Yoga Class 03') {
-          bookedEventsTable.remove({hash: 'Joy Room 2017-03-22', range: 'Yoga Class 03'})
-          deletedEvents += 1
-          res.say(event.Name + ' has been deleted');
-        }
-      })
+  return dbHelper.deleteRoomDateRecord('Joy Room 2017-03-22', 'Yoga Class 03')
+    .then(function(deletedEvents) {
       if (deletedEvents === 0) {
         res.say('Nothing found');
+      } else {
+        res.say('Yoga Class 03' + ' has been deleted');
       }
-    })
+    });
 });
 
 app.intent('dateBookingIntent', {
