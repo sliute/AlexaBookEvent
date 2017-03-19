@@ -49,24 +49,61 @@ DbHelper.prototype.addRecord = function(record) {
       var overlaps = 0;
       dayRecords.forEach(function(dayRecord) {
         if (overlap(dayRecord, record)) {
-          overlaps += 1
+          overlaps += 1;
         }
       });
       if (overlaps === 0) {
-        bookedEventsTable().insert(record)
+        bookedEventsTable().insert(record);
       }
       return overlaps;
+    })
+    .catch(function(error){
+      console.log(error);
     });
-
-  // return bookedEventsTable()
-  //   .insert(record)
-  //   .catch(function(error){console.log(error);});
 };
 
-DbHelper.prototype.readRoomDateRecords = function(roomdate) {
-  return bookedEventsTable().findAll(roomdate)
+DbHelper.prototype.readRoomDateRecords = function(roomDate) {
+  return bookedEventsTable().findAll(roomDate)
     .then(function(records) {
       return records;
+    })
+    .catch(function(error){
+      console.log(error);
+    });
+};
+
+DbHelper.prototype.readRoomDateRecordsForNow = function(roomDate) {
+  return bookedEventsTable().findAll(roomDate)
+    .then(function(records) {
+      var ongoingEvent = records.find(function(record){
+        var now = moment();
+        var start = moment(new Date().toISOString().slice(0,10) + " " + record.StartTime);
+        var duration = moment.duration(record.Duration, moment.ISO_8601).asMinutes();
+        var end = start.clone().add(duration, 'minutes');
+        if (start <= now && now <= end) {
+          return record;
+        }
+      });
+      return ongoingEvent;
+    })
+    .catch(function(error){
+      console.log(error);
+    });
+};
+
+DbHelper.prototype.readRoomDateRecordsForTime = function(roomDate, date2, time) {
+  return bookedEventsTable().findAll(roomDate)
+    .then(function(records) {
+      var ongoingEvent = records.find(function(record){
+        var searchTime = moment(new Date(date2).toISOString().slice(0,10) + " " + time);
+        var start = moment(new Date(record.Date).toISOString().slice(0,10) + " " + record.StartTime);
+        var duration = moment.duration(record.Duration, moment.ISO_8601).asMinutes();
+        var end = start.clone().add(duration, 'minutes');
+        if (start <= searchTime && searchTime <= end) {
+          return record;
+        }
+      });
+      return ongoingEvent;
     })
     .catch(function(error){
       console.log(error);
@@ -79,8 +116,8 @@ DbHelper.prototype.deleteRoomDateRecord = function(roomDate, eventName) {
       var deletedEvents = 0;
       records.forEach(function(record) {
         if (record.Name === eventName) {
-          bookedEventsTable().remove({hash: roomDate, range: eventName})
-          deletedEvents += 1
+          bookedEventsTable().remove({hash: roomDate, range: eventName});
+          deletedEvents += 1;
         }
       });
       return deletedEvents;
