@@ -38,21 +38,66 @@ app.launch(function(req, res) {
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
+// app.intent('createBookingIntent', {
+//   'slots': {
+//     'TITLE': 'DESCRIPTION',
+//     'DATE': 'AMAZON.DATE',
+//     'TIME': 'AMAZON.TIME',
+//     'OWNER': 'LIST_OF_MAKERS',
+//     'DURATION': 'AMAZON.DURATION'
+//   },
+//   'utterances': ['{book room|create booking|call booking} {|for} {-|TITLE}']
+// },
+//   function(req, res) {
+//     var title = req.slot('TITLE');
+//     var newEvent = {
+//   		"Name": title,
+//   	};
+//
+//     fs.readFile('/tmp/bookings.json', 'utf8', function(err, data){
+//       if (err) {
+//         console.log(err);
+//       } else {
+//         bookings = JSON.parse(data);
+//         bookings.Items.push(newEvent);
+//         var json = JSON.stringify(bookings);
+//         fs.writeFile('/tmp/bookings.json', json, 'utf8');
+//       }
+//     })
+//
+//     res.say('Room is booked for ' + title).shouldEndSession(false);
+//     return true;
+// });
+
+var newEvent = [];
+
 app.intent('createBookingIntent', {
   'slots': {
     'TITLE': 'DESCRIPTION',
-    'DATE': 'AMAZON.DATE',
-    'TIME': 'AMAZON.TIME',
-    'OWNER': 'LIST_OF_MAKERS',
-    'DURATION': 'AMAZON.DURATION'
   },
   'utterances': ['{book room|create booking|call booking} {|for} {-|TITLE}']
 },
   function(req, res) {
     var title = req.slot('TITLE');
-    var newEvent = {
+    newEvent.push({
   		"Name": title,
-  	};
+  	});
+
+    res.say('You are booking the room for ' + title + 'Now say, booking time is and the time of your choice').shouldEndSession(false);
+    return true;
+});
+
+app.intent('dateBookingIntent', {
+  'slots': {
+    'TIME': 'AMAZON.TIME'
+  },
+  'utterances': ['{booking time is} {-|TIME}']
+},
+  function(req, res) {
+    var time = req.slot('TIME');
+    newEvent.push({
+  		"StartTime": time,
+  	});
 
     fs.readFile('/tmp/bookings.json', 'utf8', function(err, data){
       if (err) {
@@ -64,8 +109,8 @@ app.intent('createBookingIntent', {
         fs.writeFile('/tmp/bookings.json', json, 'utf8');
       }
     })
-
-    res.say('Room is booked for ' + title).shouldEndSession(false);
+    console.log(newEvent);
+    res.say('Room is booked for '+ newEvent[0].Name + ' at' + time).shouldEndSession(false);
     return true;
 });
 
