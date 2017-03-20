@@ -232,6 +232,19 @@ function(req, res) {
     });
 });
 
+app.intent('AMAZON.HelpIntent', {},
+  function(req, res) {
+    var help = 'Welcome to Makers Rooms' +
+      'To create a new booking, say create a new booking on a date and then follow the instructions ' +
+      'To check a room\'s schedule for a certain date, say tell me all the events in room for date ' +
+      'To see what\'s going on in a room now, say what is on now in room ' +
+      'To see what\'s going on in a room at a certain date and time, say what is on at time on date in room ' +
+      'To delete a booking, say delete booking name from room on date ' +
+      'You can also say stop or cancel to exit.';
+    res.card(help);
+    res.say(help).shouldEndSession(false);
+  });
+
 app.intent('addThreeSampleBookingsIntent', {}, function(req, res){
   dbHelper.addRecord({
     "RoomDate": "Joy Room 2017-03-17",
