@@ -12,11 +12,11 @@ app.pre = function(request, response, type) {
 };
 
 app.launch(function(req, res) {
-  var prompt = 'Welcome to Makers Room<break time="1s"/>' + 'You can check out any time you like, but you can never leave';
+  var prompt = 'Welcome to Makers Rooms<break time="1s"/>' + 'Make a booking <break time="0.5s"/> check a schedule <break time="0.5s"/> or say help for more information.';
   var cardText = {
 		"type": "Standard",
-		"title": "Makers Room",
-		"text": "Welcome to Makers Room.  To find out whether a room is currently booked, ask Alexa 'What's on now?'",
+		"title": "Makers Rooms",
+		"text": "Welcome to Makers Rooms. Make a booking, check a schedule, or say help for more information.",
     "image": {
       "smallImageUrl": "https://pbs.twimg.com/profile_images/3087236754/91e379b7e0006d38ee0526946a38a1ea_400x400.png"
     }
@@ -25,19 +25,11 @@ app.launch(function(req, res) {
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
-var cancelIntentFunction = function(req, res) {
-  res.say('Sayonara!').shouldEndSession(true);
-};
-
-app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
-
-app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
-
 app.intent('dateBookingIntent', {
   'slots': {
     'DATE': 'AMAZON.DATE',
   },
-  'utterances': ['{create|make|start} {|a} {booking|new booking} {|on|for} {-|DATE}']
+  'utterances': ['{create|make} {|a} {booking|new booking} {|on|for} {-|DATE}']
 },
   function(req, res) {
     var date = req.slot('DATE');
@@ -135,10 +127,17 @@ app.intent('ownerBookingIntent', {
           res.say('Sorry, the room is booked at that time').shouldEndSession(false);
         } else {
           res.say('Thanks ' + owner + ' You have booked the ' + bookingData.RoomName + ' for ' + bookingData.Date + ' from ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
+          var cardText = {
+        		"type": "Standard",
+        		"title": "You've Booked a Room!",
+        		"text": "Success! You've booked " + bookingData.RoomName + " for " + bookingData.Date + " from " + bookingData.StartTime + " for " + stringDuration + " minutes for " + bookingData.Name + ".",
+            "image": {
+              "smallImageUrl": "https://pbs.twimg.com/profile_images/3087236754/91e379b7e0006d38ee0526946a38a1ea_400x400.png"
+            }
+          };
+          res.card(cardText);
         }
       });
-
-    return true;
 });
 
 app.intent('findByRoomDateIntent', {
@@ -155,10 +154,10 @@ function(req, res){
     .then(function(results) {
       if (results.length !== 0) {
         results.forEach(function(event) {
-          res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date + ' ').shouldEndSession(false);
+          res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date + ' ').shouldEndSession(true);
         });
       } else {
-        res.say('The ' + room + ' is free the whole day on ' + date).shouldEndSession(false);
+        res.say('The ' + room + ' is free the whole day on ' + date).shouldEndSession(true);
       }
     });
 });
@@ -191,7 +190,7 @@ app.intent('findByRoomWithTimeAndDateIntent', {
     'ROOM': 'LIST_OF_ROOMS',
     'DATE': 'AMAZON.DATE'
   },
-  'utterances': ['{find} {what is on at|what\'s on at } {-|TIME} {|on} {-|DATE} {in} {-|ROOM}']
+  'utterances': ['{find|tell|give} {|me} {what is on at|what\'s on at } {-|TIME} {|on} {-|DATE} {in} {-|ROOM}']
 },
   function (req, res) {
     var time = req.slot('TIME');
@@ -227,10 +226,19 @@ function(req, res) {
       if (deletedEvents === 0) {
         res.say('Sorry, there was no such booking to cancel');
       } else {
-        res.say(eventName + ' from ' + eventRoom + ' on ' + eventDate + ' has been deleted').shouldEndSession(false);
+        res.say(eventName + ' from ' + eventRoom + ' on ' + eventDate + ' has been deleted').shouldEndSession(true);
+
       }
     });
 });
+
+var cancelIntentFunction = function(req, res) {
+  res.say('Sayonara!').shouldEndSession(true);
+};
+
+app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
+
+app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
 
 app.intent('addThreeSampleBookingsIntent', {}, function(req, res){
   dbHelper.addRecord({
