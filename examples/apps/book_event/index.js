@@ -12,7 +12,7 @@ app.pre = function(request, response, type) {
 };
 
 app.launch(function(req, res) {
-  var prompt = 'Welcome to Makers Rooms<break time="1s"/>' + 'Make a booking <break time="0.5s"/> check a schedule <break time="0.5s"/> or say help for more information.';
+  var prompt = 'Welcome to Makers Rooms<break time="1s"/>' + 'Make a booking <break time="0.5s"/> check a room\'s schedule <break time="0.5s"/> or say help for more information.';
   var cardText = {
 		"type": "Standard",
 		"title": "Makers Rooms",
@@ -234,15 +234,14 @@ function(req, res) {
 
 app.intent('AMAZON.HelpIntent', {},
   function(req, res) {
-    var help = 'Welcome to Makers Rooms' +
-      'To create a new booking, say create a new booking on a date and then follow the instructions ' +
-      'To check a room\'s schedule for a certain date, say tell me all the events in room for date ' +
-      'To see what\'s going on in a room now, say what is on now in room ' +
-      'To see what\'s going on in a room at a certain date and time, say what is on at time on date in room ' +
-      'To delete a booking, say delete booking name from room on date ' +
-      'You can also say stop or cancel to exit.';
-    res.card(help);
-    res.say(help).shouldEndSession(false);
+    var help = 'Welcome to Makers Rooms Help <break time="0.5s"/>' +
+      'To create a new booking, say <break time="0.5s"/> create a new booking on a date and then follow the instructions <break time="1s"/>' +
+      'To check a room\'s schedule for a certain date, say <break time="0.5s"/> tell me all the events in room for date <break time="1s"/>' +
+      'To see what\'s going on in a room now, say <break time="0.5s"/>  what is on now in room <break time="1s"/>' +
+      'To see what\'s going on in a room at a certain date and time, say <break time="0.5s"/>  what is on at time on date in room <break time="1s"/>' +
+      'To delete a booking, say <break time="0.5s"/>  delete booking name from room on date <break time="1s"/>' +
+      'You can also say <break time="0.5s"/>  stop or cancel to exit.';
+    res.say(help).shouldEndSession(true);
   });
 
 var cancelIntentFunction = function(req, res) {
