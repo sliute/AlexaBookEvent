@@ -4,15 +4,15 @@ var _ = require('lodash');
 var moment = require('moment');
 var EVENTS_TABLE_NAME = 'BookedEvents';
 
-// var dynasty = require('dynasty')({});
-var localUrl = 'http://localhost:8000';
-var localCredentials = {
-  region: 'us-east-1',
-  accessKeyId: 'fake',
-  secretAccessKey: 'fake'
-};
-var localDynasty = require('dynasty')(localCredentials, localUrl);
-var dynasty = localDynasty;
+var dynasty = require('dynasty')({});
+// var localUrl = 'http://localhost:8000';
+// var localCredentials = {
+//   region: 'us-east-1',
+//   accessKeyId: 'fake',
+//   secretAccessKey: 'fake'
+// };
+// var localDynasty = require('dynasty')(localCredentials, localUrl);
+// var dynasty = localDynasty;
 
 function DbHelper() {}
 
