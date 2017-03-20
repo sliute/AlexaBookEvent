@@ -232,7 +232,6 @@ function(req, res) {
     });
 });
 
-
 app.intent('secretIntent', {
   'utterances': ['{who\'s|who is} {Rob Holden}']},
   function(req, res) {
@@ -270,36 +269,7 @@ app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
 app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
 
 app.intent('addThreeSampleBookingsIntent', {}, function(req, res){
-  dbHelper.addRecord({
-    "RoomDate": "Joy Room 2017-03-17",
-		"RoomName": "Joy Room",
-		"Owner": "Dana",
-		"Name": "Yoga Class 01",
-		"Date": "2017-03-17",
-		"StartTime": "17:00",
-		"Duration": "PT60M"
-	});
-
-  dbHelper.addRecord({
-    "RoomDate": "Living Room 2017-03-17",
-		"RoomName": "Living Room",
-		"Owner": "Dana",
-		"Name": "Yoga Class 02",
-		"Date": "2017-03-17",
-		"StartTime": "17:00",
-		"Duration": "PT60M"
-	});
-
-  dbHelper.addRecord({
-    "RoomDate": "Joy Room 2017-03-22",
-		"RoomName": "Joy Room",
-		"Owner": "Dana",
-		"Name": "Yoga Class 03",
-		"Date": "2017-03-22",
-		"StartTime": "17:00",
-		"Duration": "PT60M"
-	});
-
+  dbHelper.addSampleRecords();
   res.say('You have added three sample bookings!').shouldEndSession(false);
 });
 
