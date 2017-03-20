@@ -232,6 +232,23 @@ function(req, res) {
     });
 });
 
+
+app.intent('secretIntent', {
+  'utterances': ['{who\'s|who is} {Rob Holden}']},
+  function(req, res) {
+    var answer = 'I know, but I won\'t tell you';
+    res.say(answer).shouldEndSession(true);
+    var cardText = {
+      "type": "Standard",
+      "title": "Secret revealed!",
+      "text": "Here is Rob!",
+      "image": {
+        "smallImageUrl": "https://scontent-lht6-1.xx.fbcdn.net/v/t1.0-9/10350508_10153547537482877_795798945280772953_n.jpg?oh=c0037cecfdc5e0075c583f1adb65423e&oe=596E63DF"
+      }
+    };
+    res.card(cardText);
+});
+
 app.intent('AMAZON.HelpIntent', {},
   function(req, res) {
     var help = 'Welcome to Makers Rooms Help <break time="0.5s"/>' +
