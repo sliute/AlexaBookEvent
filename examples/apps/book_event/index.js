@@ -146,7 +146,7 @@ app.intent('findByRoomDateIntent', {
     'ROOM': 'LIST_OF_ROOMS',
     'DATE': 'AMAZON.DATE'
   },
-  'utterances': ['{-find|tell|give} {|me} {|all} {|the} {bookings|events} {in} {-|ROOM} {|on|for} {-|DATE}']},
+  'utterances': ['{find|tell|give} {|me} {|all} {|the} {bookings|events} {in} {-|ROOM} {|on|for} {-|DATE}']},
 function(req, res){
   var room = req.slot('ROOM');
   var date = req.slot('DATE');
@@ -167,7 +167,7 @@ app.intent('findByRoomWithNowIntent', {
     'slots': {
       'ROOM': 'LIST_OF_ROOMS'
   },
-    'utterances': ['{-|find|tell|give} {|me} {what is on now|what\'s on now|what is going on now|what\'s going on now} {in} {-|ROOM}']
+    'utterances': ['{find|tell|give} {|me} {what is on now|what\'s on now|what is going on now|what\'s going on now} {in} {-|ROOM}']
 },
   function(req, res) {
     var date = new Date().toISOString().slice(0,10);
