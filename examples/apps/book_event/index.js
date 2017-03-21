@@ -16,14 +16,7 @@ app.pre = function(request, response, type) {
 
 app.launch(function(req, res) {
   var prompt = 'Welcome to Makers Rooms<break time="1s"/>' + 'Make a booking <break time="0.5s"/> check a room\'s schedule <break time="0.5s"/> or say help for more information.';
-  var cardText = {
-		"type": "Standard",
-		"title": "Makers Rooms",
-		"text": "Welcome to Makers Rooms. Make a booking, check a schedule, or say help for more information.",
-    "image": {
-      "smallImageUrl": "https://pbs.twimg.com/profile_images/3087236754/91e379b7e0006d38ee0526946a38a1ea_400x400.png"
-    }
-  };
+  var cardText = buildCard("Makers Rooms", "Welcome to Makers Rooms. Make a booking, check a schedule, or say help for more information.");
   res.card(cardText);
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
@@ -181,14 +174,7 @@ app.intent('ownerBookingIntent', {
             res.say('Sorry, the room is booked at that time').shouldEndSession(false);
           } else {
             res.say('Thanks ' + owner + ' You have booked the ' + bookingData.RoomName + ' for ' + bookingData.Date + ' from ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
-            var cardText = {
-          		"type": "Standard",
-          		"title": "You've Booked a Room!",
-          		"text": "Success! You've booked " + bookingData.RoomName + " for " + bookingData.Date + " from " + bookingData.StartTime + " for " + stringDuration + " minutes for " + bookingData.Name + ".",
-              "image": {
-                "smallImageUrl": "https://pbs.twimg.com/profile_images/3087236754/91e379b7e0006d38ee0526946a38a1ea_400x400.png"
-              }
-            };
+            var cardText = buildCard("You've Booked a Room!", "Success! You've booked " + bookingData.RoomName + " for " + bookingData.Date + " from " + bookingData.StartTime + " for " + stringDuration + " minutes for " + bookingData.Name + ".");
             res.card(cardText);
           }
         });
@@ -204,21 +190,22 @@ app.intent('findByRoomDateIntent', {
     'ROOM': 'LIST_OF_ROOMS',
     'DATE': 'AMAZON.DATE'
   },
-  'utterances': ['{find|tell|give} {|me} {|all} {|the} {bookings|events} {in} {-|ROOM} {|on|for} {-|DATE}']},
-function(req, res){
-  var room = req.slot('ROOM');
-  var date = req.slot('DATE');
-  var roomDate = req.slot('ROOM') + ' ' + req.slot('DATE');
-  return dbHelper.readRoomDateRecords(roomDate)
-    .then(function(results) {
-      if (results.length !== 0) {
-        results.forEach(function(event) {
-          res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date + ' ').shouldEndSession(true);
-        });
-      } else {
-        res.say('The ' + room + ' is free the whole day on ' + date).shouldEndSession(true);
-      }
-    });
+  'utterances': ['{find|tell|give} {|me} {|all} {|the} {bookings|events} {in} {-|ROOM} {|on|for} {-|DATE}']
+},
+  function(req, res){
+    var room = req.slot('ROOM');
+    var date = req.slot('DATE');
+    var roomDate = req.slot('ROOM') + ' ' + req.slot('DATE');
+    return dbHelper.readRoomDateRecords(roomDate)
+      .then(function(results) {
+        if (results.length !== 0) {
+          results.forEach(function(event) {
+            res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' at ' + event.StartTime + ' ').shouldEndSession(true);
+          });
+        } else {
+          res.say('The ' + room + ' is free the whole day on ' + date).shouldEndSession(true);
+        }
+      });
 });
 
 app.intent('findByRoomWithNowIntent', {
@@ -316,7 +303,6 @@ function(req, res) {
           res.say('Sorry, there was no such booking to delete').shouldEndSession(true);
         } else {
           res.say(eventName + ' from ' + eventRoom + ' on ' + eventDate + ' has been deleted').shouldEndSession(true);
-
         }
       });
   }
@@ -326,33 +312,28 @@ function(req, res) {
   }
 });
 
-
 app.intent('secretIntent', {
-  'utterances': ['{who\'s|who is} {Rob Holden}']},
+  'utterances': ['{who\'s|who is} {Rob Holden}']
+},
   function(req, res) {
     var answer = 'I know, but I won\'t tell you';
     res.say(answer).shouldEndSession(true);
-    var cardText = {
-      "type": "Standard",
-      "title": "Secret revealed!",
-      "text": "Here is Rob!",
-      "image": {
-        "smallImageUrl": "https://scontent-lht6-1.xx.fbcdn.net/v/t1.0-9/10350508_10153547537482877_795798945280772953_n.jpg?oh=c0037cecfdc5e0075c583f1adb65423e&oe=596E63DF"
-      }
-    };
+    var cardText = buildCard("Secret revealed", "Here is Rob!");
     res.card(cardText);
 });
 
 app.intent('AMAZON.HelpIntent', {},
   function(req, res) {
-    var help = 'Welcome to Makers Rooms Help <break time="0.5s"/>' +
-      'To create a new booking, say <break time="0.5s"/> create a new booking on a date and then follow the instructions <break time="1s"/>' +
-      'To check a room\'s schedule for a certain date, say <break time="0.5s"/> tell me all the events in room for date <break time="1s"/>' +
-      'To see what\'s going on in a room now, say <break time="0.5s"/>  what is on now in room <break time="1s"/>' +
-      'To see what\'s going on in a room at a certain date and time, say <break time="0.5s"/>  what is on at time on date in room <break time="1s"/>' +
-      'To delete a booking, say <break time="0.5s"/>  delete booking name from room on date <break time="1s"/>' +
-      'You can also say <break time="0.5s"/>  stop or cancel to exit.';
-    res.say(help).shouldEndSession(true);
+    var help = 'Welcome to Makers Rooms Help <break time="0.5s"/>';
+    var content = 'To create a new booking, say <break time="0.5s"/> create a new booking on a date and then follow the instructions <break time="1s"/>' +
+    'To check a room\'s schedule for a certain date, say <break time="0.5s"/> tell me all the events in room for date <break time="1s"/>' +
+    'To see what\'s going on in a room now, say <break time="0.5s"/>  what is on now in room <break time="1s"/>' +
+    'To see what\'s going on in a room at a certain date and time, say <break time="0.5s"/>  what is on at time on date in room <break time="1s"/>' +
+    'To delete a booking, say <break time="0.5s"/>  delete booking name from room on date <break time="1s"/>' +
+    'You can also say <break time="0.5s"/>  stop or cancel to exit.';
+    var cardText = buildCard("Makers Room Help", content);
+    res.say(help + content).shouldEndSession(true);
+    res.card(cardText);
   });
 
 var cancelIntentFunction = function(req, res) {
@@ -363,38 +344,23 @@ app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
 
 app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
 
-app.intent('addThreeSampleBookingsIntent', {}, function(req, res){
-  dbHelper.addRecord({
-    "RoomDate": "Joy Room 2017-03-17",
-		"RoomName": "Joy Room",
-		"Owner": "Dana",
-		"Name": "Yoga Class 01",
-		"Date": "2017-03-17",
-		"StartTime": "17:00",
-		"Duration": "PT60M"
-	});
+app.intent('addThreeSampleBookingsIntent', {
+  'utterances': ['{please add sample intents}']
+},
+  function(req, res){
+    dbHelper.addSampleRecords();
+    res.say('You have added some sample bookings to the database!').shouldEndSession(false);
+  });
 
-  dbHelper.addRecord({
-    "RoomDate": "Living Room 2017-03-17",
-		"RoomName": "Living Room",
-		"Owner": "Dana",
-		"Name": "Yoga Class 02",
-		"Date": "2017-03-17",
-		"StartTime": "17:00",
-		"Duration": "PT60M"
-	});
-
-  dbHelper.addRecord({
-    "RoomDate": "Joy Room 2017-03-22",
-		"RoomName": "Joy Room",
-		"Owner": "Dana",
-		"Name": "Yoga Class 03",
-		"Date": "2017-03-22",
-		"StartTime": "17:00",
-		"Duration": "PT60M"
-	});
-
-  res.say('You have added three sample bookings!').shouldEndSession(false);
-});
+function buildCard(title, text){
+  return {
+    "type": "Standard",
+    "title": title,
+    "text": text,
+    "image": {
+      "smallImageUrl": "https://cdn-images-1.medium.com/max/1600/1*HIJGMWtNFLBwpG5kpfmAXg.jpeg"
+    }
+  };
+}
 
 module.exports = app;
