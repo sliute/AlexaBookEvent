@@ -272,7 +272,7 @@ app.intent('startDeleteBookingIntent', {
   'utterances': ['{delete|remove} {|a} {booking}']
 },
   function(req, res) {
-    res.say('To delete a booking please say the password is, followed by the password').shouldEndSession(false);
+    res.say('To delete a booking please say delete with password, followed by the password').shouldEndSession(false);
     return true;
 });
 
@@ -280,7 +280,7 @@ app.intent('passwordDeleteBookingIntent', {
   'slots': {
     'PASSWORD': 'PASSWORDS',
   },
-  'utterances': ['{the password is} {-|PASSWORD}']
+  'utterances': ['{delete with password} {-|PASSWORD}']
 },
   function(req, res) {
     var password = req.slot('PASSWORD');
@@ -313,7 +313,7 @@ function(req, res) {
     return dbHelper.deleteRoomDateRecord(roomDate, eventName)
       .then(function(deletedEvents) {
         if (deletedEvents === 0) {
-          res.say('Sorry, there was no such booking to cancel').shouldEndSession(true);
+          res.say('Sorry, there was no such booking to delete').shouldEndSession(true);
         } else {
           res.say(eventName + ' from ' + eventRoom + ' on ' + eventDate + ' has been deleted').shouldEndSession(true);
 
@@ -321,7 +321,7 @@ function(req, res) {
       });
   }
   else {
-    res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say the password is, followed by the password').shouldEndSession(true);
+    res.say('Sorry. You can not delete a booking without providing a password. To delete a booking please say the password is, followed by the password').shouldEndSession(true);
     return true;
   }
 });
