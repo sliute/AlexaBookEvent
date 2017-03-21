@@ -59,7 +59,7 @@ DbHelper.prototype.addRecord = function(record) {
           overlaps = -1;
         });
       }
-      return overlaps
+      return overlaps;
     })
     .catch(function(error){
       console.log(error);
