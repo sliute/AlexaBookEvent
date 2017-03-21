@@ -6,6 +6,7 @@ var app = new Alexa.app('book_event');
 var moment = require('moment');
 var DbHelper = require('./db_helper');
 var dbHelper = new DbHelper();
+var PASSWORD = "object oriented booking";
 
 app.pre = function(request, response, type) {
   dbHelper.createBookedEventsTable();
@@ -25,20 +26,53 @@ app.launch(function(req, res) {
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
+app.intent('startBookingIntent', {
+  'utterances': ['{create|make} {|a} {booking|new booking}']
+},
+  function(req, res) {
+    res.say('To create a new booking please say the password is, followed by the password').shouldEndSession(false);
+    return true;
+});
+
+app.intent('passwordBookingIntent', {
+  'slots': {
+    'PASSWORD': 'PASSWORDS',
+  },
+  'utterances': ['{the password is} {-|PASSWORD}']
+},
+  function(req, res) {
+    var password = req.slot('PASSWORD');
+    if (password === PASSWORD) {
+      res.say('Thank you. What is the date of your booking?').shouldEndSession(false);
+      return true;
+      var session = req.getSession();
+      session.set("PasswordValidation", true);
+    }
+    else {
+      res.say('Sorry. I do not recognise this password. Please try again or ask makers for the correct password.').shouldEndSession(false);
+      return true;
+    }
+});
+
 app.intent('dateBookingIntent', {
   'slots': {
     'DATE': 'AMAZON.DATE',
   },
-  'utterances': ['{create|make} {|a} {booking|new booking} {|on|for} {-|DATE}']
+  'utterances': ['{-|DATE}']
 },
   function(req, res) {
-    var date = req.slot('DATE');
-
-    var session = req.getSession();
-    session.set("Date", date);
-
-    res.say('You are making a booking for ' + date + '. Which room would you like to book?').shouldEndSession(false);
-    return true;
+    var bookingData = res.sessionObject.attributes;
+    if (bookingData.PasswordValidation === true) {
+      var date = req.slot('DATE');
+      var session = req.getSession();
+      session.set("Date", date);
+      res.say('You are making a booking for ' + date + '. Which room would you like to book?').shouldEndSession(false);
+      return true;
+    }
+    else {
+      res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say the password is, followed by the password').shouldEndSession(true);
+      return true;
+    }
 });
 
 app.intent('roomBookingIntent', {
