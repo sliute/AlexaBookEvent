@@ -13,14 +13,7 @@ app.pre = function(request, response, type) {
 
 app.launch(function(req, res) {
   var prompt = 'Welcome to Makers Rooms<break time="1s"/>' + 'Make a booking <break time="0.5s"/> check a room\'s schedule <break time="0.5s"/> or say help for more information.';
-  var cardText = {
-		"type": "Standard",
-		"title": "Makers Rooms",
-		"text": "Welcome to Makers Rooms. Make a booking, check a schedule, or say help for more information.",
-    "image": {
-      "smallImageUrl": "https://cdn-images-1.medium.com/max/1600/1*HIJGMWtNFLBwpG5kpfmAXg.jpeg"
-    }
-  };
+  var cardText = buildCard("Makers Rooms", "Welcome to Makers Rooms. Make a booking, check a schedule, or say help for more information.");
   res.card(cardText);
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
@@ -127,14 +120,7 @@ app.intent('ownerBookingIntent', {
           res.say('Sorry, the room is booked at that time').shouldEndSession(false);
         } else {
           res.say('Thanks ' + owner + ' You have booked the ' + bookingData.RoomName + ' for ' + bookingData.Date + ' from ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
-          var cardText = {
-        		"type": "Standard",
-        		"title": "You've Booked a Room!",
-        		"text": "Success! You've booked " + bookingData.RoomName + " for " + bookingData.Date + " from " + bookingData.StartTime + " for " + stringDuration + " minutes for " + bookingData.Name + ".",
-            "image": {
-              "smallImageUrl": "https://cdn-images-1.medium.com/max/1600/1*HIJGMWtNFLBwpG5kpfmAXg.jpeg"
-            }
-          };
+          var cardText = buildCard("You've Booked a Room!", "Success! You've booked " + bookingData.RoomName + " for " + bookingData.Date + " from " + bookingData.StartTime + " for " + stringDuration + " minutes for " + bookingData.Name + ".");
           res.card(cardText);
         }
       });
@@ -240,34 +226,20 @@ app.intent('secretIntent', {
   function(req, res) {
     var answer = 'I know, but I won\'t tell you';
     res.say(answer).shouldEndSession(true);
-    var cardText = {
-      "type": "Standard",
-      "title": "Secret revealed!",
-      "text": "Here is Rob!",
-      "image": {
-        "smallImageUrl": "https://cdn-images-1.medium.com/max/1600/1*HIJGMWtNFLBwpG5kpfmAXg.jpeg"
-      }
-    };
+    var cardText = buildCard("Secret revealed", "Here is Rob!");
     res.card(cardText);
 });
 
 app.intent('AMAZON.HelpIntent', {},
   function(req, res) {
     var help = 'Welcome to Makers Rooms Help <break time="0.5s"/>';
-      var content = 'To create a new booking, say <break time="0.5s"/> create a new booking on a date and then follow the instructions <break time="1s"/>' +
-      'To check a room\'s schedule for a certain date, say <break time="0.5s"/> tell me all the events in room for date <break time="1s"/>' +
-      'To see what\'s going on in a room now, say <break time="0.5s"/>  what is on now in room <break time="1s"/>' +
-      'To see what\'s going on in a room at a certain date and time, say <break time="0.5s"/>  what is on at time on date in room <break time="1s"/>' +
-      'To delete a booking, say <break time="0.5s"/>  delete booking name from room on date <break time="1s"/>' +
-      'You can also say <break time="0.5s"/>  stop or cancel to exit.';
-      var cardText = {
-        "type": "Standard",
-        "title": "Makers Rooms Help",
-        "text": content,
-        "image": {
-          "smallImageUrl": "https://cdn-images-1.medium.com/max/1600/1*HIJGMWtNFLBwpG5kpfmAXg.jpeg"
-        }
-      };
+    var content = 'To create a new booking, say <break time="0.5s"/> create a new booking on a date and then follow the instructions <break time="1s"/>' +
+    'To check a room\'s schedule for a certain date, say <break time="0.5s"/> tell me all the events in room for date <break time="1s"/>' +
+    'To see what\'s going on in a room now, say <break time="0.5s"/>  what is on now in room <break time="1s"/>' +
+    'To see what\'s going on in a room at a certain date and time, say <break time="0.5s"/>  what is on at time on date in room <break time="1s"/>' +
+    'To delete a booking, say <break time="0.5s"/>  delete booking name from room on date <break time="1s"/>' +
+    'You can also say <break time="0.5s"/>  stop or cancel to exit.';
+    var cardText = buildCard("Makers Room Help", content);
     res.say(help + content).shouldEndSession(true);
     res.card(cardText);
   });
@@ -287,5 +259,16 @@ app.intent('addThreeSampleBookingsIntent', {
     dbHelper.addSampleRecords();
     res.say('You have added some sample bookings to the database!').shouldEndSession(false);
   });
+
+function buildCard(title, text){
+  return {
+    "type": "Standard",
+    "title": title,
+    "text": text,
+    "image": {
+      "smallImageUrl": "https://cdn-images-1.medium.com/max/1600/1*HIJGMWtNFLBwpG5kpfmAXg.jpeg"
+    }
+  };
+}
 
 module.exports = app;
