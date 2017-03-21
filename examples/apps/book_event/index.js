@@ -6,6 +6,9 @@ var app = new Alexa.app('book_event');
 var moment = require('moment');
 var DbHelper = require('./db_helper');
 var dbHelper = new DbHelper();
+var PASSWORD = "object oriented booking";
+var validatedPassword;
+
 
 app.pre = function(request, response, type) {
   dbHelper.createBookedEventsTable();
@@ -18,20 +21,53 @@ app.launch(function(req, res) {
   res.say(prompt).reprompt(prompt).shouldEndSession(false);
 });
 
+app.intent('startBookingIntent', {
+  'utterances': ['{create|make} {|a} {booking|new booking}']
+},
+  function(req, res) {
+    res.say('To create a new booking please say the password is, followed by the password').shouldEndSession(false);
+    return true;
+});
+
+app.intent('passwordBookingIntent', {
+  'slots': {
+    'PASSWORD': 'PASSWORDS',
+  },
+  'utterances': ['{the password is} {-|PASSWORD}']
+},
+  function(req, res) {
+    var password = req.slot('PASSWORD');
+    if (password === PASSWORD) {
+      var session = req.getSession();
+      session.set("PasswordValidation", true);
+      res.say('Thank you. What is the date of your booking?').shouldEndSession(false);
+      return true;
+    }
+    else {
+      res.say('Sorry. I do not recognise this password. Please try again or ask makers for the correct password.').shouldEndSession(false);
+      return true;
+    }
+});
+
 app.intent('dateBookingIntent', {
   'slots': {
     'DATE': 'AMAZON.DATE',
   },
-  'utterances': ['{create|make} {|a} {booking|new booking} {|on|for} {-|DATE}']
+  'utterances': ['{-|DATE}']
 },
   function(req, res) {
-    var date = req.slot('DATE');
-
-    var session = req.getSession();
-    session.set("Date", date);
-
-    res.say('You are making a booking for ' + date + '. Which room would you like to book?').shouldEndSession(false);
-    return true;
+    validatedPassword = res.sessionObject.attributes.PasswordValidation;
+    if (validatedPassword === true) {
+      var date = req.slot('DATE');
+      var session = req.getSession();
+      session.set("Date", date);
+      res.say('You are making a booking for ' + date + '. Which room would you like to book?').shouldEndSession(false);
+      return true;
+    }
+    else {
+      res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say the password is, followed by the password').shouldEndSession(true);
+      return true;
+    }
 });
 
 app.intent('roomBookingIntent', {
@@ -41,13 +77,17 @@ app.intent('roomBookingIntent', {
   'utterances': ['{|book} {-|ROOM}']
 },
   function(req, res) {
-    var room = req.slot('ROOM');
-
-    var session = req.getSession();
-    session.set("RoomName", room);
-
-    res.say('You are booking ' + room + '. What time would you like to book ' + room + '?').shouldEndSession(false);
-    return true;
+    if (validatedPassword === true) {
+      var room = req.slot('ROOM');
+      var session = req.getSession();
+      session.set("RoomName", room);
+      res.say('You are booking ' + room + '. What time would you like to book ' + room + '?').shouldEndSession(false);
+      return true;
+    }
+    else {
+      res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say the password is, followed by the password').shouldEndSession(true);
+      return true;
+    }
 });
 
 app.intent('timeBookingIntent', {
@@ -57,13 +97,17 @@ app.intent('timeBookingIntent', {
   'utterances': ['{|book} {|for|at} {-|TIME}']
 },
   function(req, res) {
-    var time = req.slot('TIME');
-
-    var session = req.getSession();
-    session.set("StartTime", time);
-
-    res.say('You are booking the room at ' + time + '. How long would you like to book it for?').shouldEndSession(false);
-    return true;
+    if (validatedPassword === true) {
+      var time = req.slot('TIME');
+      var session = req.getSession();
+      session.set("StartTime", time);
+      res.say('You are booking the room at ' + time + '. How long would you like to book it for?').shouldEndSession(false);
+      return true;
+    }
+    else {
+      res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say the password is, followed by the password').shouldEndSession(true);
+      return true;
+    }
 });
 
 app.intent('durationBookingIntent', {
@@ -73,13 +117,18 @@ app.intent('durationBookingIntent', {
   'utterances': ['{|book} {|for} {-|DURATION}']
 },
   function(req, res) {
-    var duration = req.slot('DURATION');
-    var stringDuration = moment.duration(duration, moment.ISO_8601).asMinutes();
-    var session = req.getSession();
-    session.set("Duration", duration);
-
-    res.say('You are booking the room for ' + stringDuration + ' minutes. What is the name of your event?').shouldEndSession(false);
-    return true;
+    if (validatedPassword === true) {
+      var duration = req.slot('DURATION');
+      var stringDuration = moment.duration(duration, moment.ISO_8601).asMinutes();
+      var session = req.getSession();
+      session.set("Duration", duration);
+      res.say('You are booking the room for ' + stringDuration + ' minutes. What is the name of your event?').shouldEndSession(false);
+      return true;
+    }
+    else {
+      res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say the password is, followed by the password').shouldEndSession(true);
+      return true;
+    }
 });
 
 app.intent('nameBookingIntent', {
@@ -89,13 +138,17 @@ app.intent('nameBookingIntent', {
   'utterances': ['{|my event is called} {-|NAME}']
 },
   function(req, res) {
-    var name = req.slot('NAME');
-
-    var session = req.getSession();
-    session.set("Name", name);
-
-    res.say('You are booking the room for ' + name + '. Finally, What is your name?').shouldEndSession(false);
-    return true;
+    if (validatedPassword === true) {
+      var name = req.slot('NAME');
+      var session = req.getSession();
+      session.set("Name", name);
+      res.say('You are booking the room for ' + name + '. Finally, What is your name?').shouldEndSession(false);
+      return true;
+    }
+    else {
+      res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say the password is, followed by the password').shouldEndSession(true);
+      return true;
+    }
 });
 
 app.intent('ownerBookingIntent', {
@@ -105,25 +158,31 @@ app.intent('ownerBookingIntent', {
   'utterances': ['{|my name is} {-|OWNER}']
 },
   function(req, res) {
-    var owner = req.slot('OWNER');
-    var session = req.getSession();
-    session.set("Owner", owner);
+    if (validatedPassword === true) {
+      var bookingData = res.sessionObject.attributes;
+      var owner = req.slot('OWNER');
+      var session = req.getSession();
+      session.clear("PasswordValidation", true);
+      session.set("Owner", owner);
+      session.set("RoomDate", bookingData.RoomName + " " + bookingData.Date);
+      var bookingDataComplete = res.sessionObject.attributes;
+      var stringDuration = moment.duration(bookingData.Duration, moment.ISO_8601).asMinutes();
 
-    var bookingData = res.sessionObject.attributes;
-    session.set("RoomDate", bookingData.RoomName + " " + bookingData.Date);
-    var bookingDataComplete = res.sessionObject.attributes;
-    var stringDuration = moment.duration(bookingData.Duration, moment.ISO_8601).asMinutes();
-
-    return dbHelper.addRecord(bookingDataComplete)
-      .then(function(overlaps) {
-        if (overlaps) {
-          res.say('Sorry, the room is booked at that time').shouldEndSession(false);
-        } else {
-          res.say('Thanks ' + owner + ' You have booked the ' + bookingData.RoomName + ' for ' + bookingData.Date + ' from ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
-          var cardText = buildCard("You've Booked a Room!", "Success! You've booked " + bookingData.RoomName + " for " + bookingData.Date + " from " + bookingData.StartTime + " for " + stringDuration + " minutes for " + bookingData.Name + ".");
-          res.card(cardText);
-        }
-      });
+      return dbHelper.addRecord(bookingDataComplete)
+        .then(function(overlaps) {
+          if (overlaps) {
+            res.say('Sorry, the room is booked at that time').shouldEndSession(false);
+          } else {
+            res.say('Thanks ' + owner + ' You have booked the ' + bookingData.RoomName + ' for ' + bookingData.Date + ' from ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
+            var cardText = buildCard("You've Booked a Room!", "Success! You've booked " + bookingData.RoomName + " for " + bookingData.Date + " from " + bookingData.StartTime + " for " + stringDuration + " minutes for " + bookingData.Name + ".");
+            res.card(cardText);
+          }
+        });
+    }
+    else {
+      res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say the password is, followed by the password').shouldEndSession(true);
+      return true;
+    }
 });
 
 app.intent('findByRoomDateIntent', {
@@ -196,15 +255,44 @@ app.intent('findByRoomWithTimeAndDateIntent', {
     });
 });
 
+app.intent('startDeleteBookingIntent', {
+  'utterances': ['{delete|remove} {|a} {booking}']
+},
+  function(req, res) {
+    res.say('To delete a booking please say delete with password, followed by the password').shouldEndSession(false);
+    return true;
+});
+
+app.intent('passwordDeleteBookingIntent', {
+  'slots': {
+    'PASSWORD': 'PASSWORDS',
+  },
+  'utterances': ['{delete with password} {-|PASSWORD}']
+},
+  function(req, res) {
+    var password = req.slot('PASSWORD');
+    if (password === PASSWORD) {
+      var session = req.getSession();
+      session.set("PasswordValidation", true);
+      res.say('Thank you. To delete a booking say delete name from room on date').shouldEndSession(false);
+      return true;
+    }
+    else {
+      res.say('Sorry. I do not recognise this password. Please try again or ask makers for the correct password.').shouldEndSession(false);
+      return true;
+    }
+});
+
 app.intent('deleteBookingIntent', {
   'slots': {
     'NAME': 'DESCRIPTION',
     'ROOM': 'LIST_OF_ROOMS',
     'DATE': 'AMAZON.DATE'
   },
-  'utterances': ['{remove|delete|cancel} {-|NAME} {from} {-|ROOM} {|on|for} {-|DATE}']
-},
-  function(req, res) {
+  'utterances': ['{remove|delete} {-|NAME} {from} {-|ROOM} {|on|for} {-|DATE}']},
+function(req, res) {
+  validatedPassword = res.sessionObject.attributes.PasswordValidation;
+  if (validatedPassword === true) {
     var eventName = req.slot('NAME');
     var eventRoom = req.slot('ROOM');
     var eventDate = req.slot('DATE');
@@ -212,13 +300,17 @@ app.intent('deleteBookingIntent', {
     return dbHelper.deleteRoomDateRecord(roomDate, eventName)
       .then(function(deletedEvents) {
         if (deletedEvents === 0) {
-          res.say('Sorry, there was no such booking to cancel');
+          res.say('Sorry, there was no such booking to delete').shouldEndSession(true);
         } else {
           res.say(eventName + ' from ' + eventRoom + ' on ' + eventDate + ' has been deleted').shouldEndSession(true);
-
         }
       });
-  });
+  }
+  else {
+    res.say('Sorry. You can not delete a booking without providing a password. To delete a booking please say the password is, followed by the password').shouldEndSession(true);
+    return true;
+  }
+});
 
 app.intent('secretIntent', {
   'utterances': ['{who\'s|who is} {Rob Holden}']
