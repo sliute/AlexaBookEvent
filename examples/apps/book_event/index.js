@@ -268,27 +268,62 @@ app.intent('findByRoomWithTimeAndDateIntent', {
     });
 });
 
+app.intent('startDeleteBookingIntent', {
+  'utterances': ['{delete|remove} {|a} {booking}']
+},
+  function(req, res) {
+    res.say('To delete a booking please say the password is, followed by the password').shouldEndSession(false);
+    return true;
+});
+
+app.intent('passwordDeleteBookingIntent', {
+  'slots': {
+    'PASSWORD': 'PASSWORDS',
+  },
+  'utterances': ['{the password is} {-|PASSWORD}']
+},
+  function(req, res) {
+    var password = req.slot('PASSWORD');
+    if (password === PASSWORD) {
+      var session = req.getSession();
+      session.set("PasswordValidation", true);
+      res.say('Thank you. To delete a booking say delete name from room on date').shouldEndSession(false);
+      return true;
+    }
+    else {
+      res.say('Sorry. I do not recognise this password. Please try again or ask makers for the correct password.').shouldEndSession(false);
+      return true;
+    }
+});
+
 app.intent('deleteBookingIntent', {
   'slots': {
     'NAME': 'DESCRIPTION',
     'ROOM': 'LIST_OF_ROOMS',
     'DATE': 'AMAZON.DATE'
   },
-  'utterances': ['{remove|delete|cancel} {-|NAME} {from} {-|ROOM} {|on|for} {-|DATE}']},
+  'utterances': ['{remove|delete} {-|NAME} {from} {-|ROOM} {|on|for} {-|DATE}']},
 function(req, res) {
-  var eventName = req.slot('NAME');
-  var eventRoom = req.slot('ROOM');
-  var eventDate = req.slot('DATE');
-  var roomDate = req.slot('ROOM') + ' ' + req.slot('DATE');
-  return dbHelper.deleteRoomDateRecord(roomDate, eventName)
-    .then(function(deletedEvents) {
-      if (deletedEvents === 0) {
-        res.say('Sorry, there was no such booking to cancel');
-      } else {
-        res.say(eventName + ' from ' + eventRoom + ' on ' + eventDate + ' has been deleted').shouldEndSession(true);
+  validatedPassword = res.sessionObject.attributes.PasswordValidation;
+  if (validatedPassword === true) {
+    var eventName = req.slot('NAME');
+    var eventRoom = req.slot('ROOM');
+    var eventDate = req.slot('DATE');
+    var roomDate = req.slot('ROOM') + ' ' + req.slot('DATE');
+    return dbHelper.deleteRoomDateRecord(roomDate, eventName)
+      .then(function(deletedEvents) {
+        if (deletedEvents === 0) {
+          res.say('Sorry, there was no such booking to cancel').shouldEndSession(true);
+        } else {
+          res.say(eventName + ' from ' + eventRoom + ' on ' + eventDate + ' has been deleted').shouldEndSession(true);
 
-      }
-    });
+        }
+      });
+  }
+  else {
+    res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say the password is, followed by the password').shouldEndSession(true);
+    return true;
+  }
 });
 
 
