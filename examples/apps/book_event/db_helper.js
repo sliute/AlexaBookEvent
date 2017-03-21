@@ -4,15 +4,15 @@ var _ = require('lodash');
 var moment = require('moment');
 var EVENTS_TABLE_NAME = 'BookedEvents';
 
-// var dynasty = require('dynasty')({});
-var localUrl = 'http://localhost:8000';
-var localCredentials = {
-  region: 'us-east-1',
-  accessKeyId: 'fake',
-  secretAccessKey: 'fake'
-};
-var localDynasty = require('dynasty')(localCredentials, localUrl);
-var dynasty = localDynasty;
+var dynasty = require('dynasty')({});
+// var localUrl = 'http://localhost:8000';
+// var localCredentials = {
+//   region: 'us-east-1',
+//   accessKeyId: 'fake',
+//   secretAccessKey: 'fake'
+// };
+// var localDynasty = require('dynasty')(localCredentials, localUrl);
+// var dynasty = localDynasty;
 
 function DbHelper() {}
 
@@ -135,36 +135,21 @@ DbHelper.prototype.deleteRoomDateRecord = function(roomDate, eventName) {
     });
 };
 
-DbHelper.prototype.addSampleRecords = function() {
-  this.addRecord({
-    "RoomDate": "joy room 2017-03-27",
-		"RoomName": "joy room",
-		"Owner": "dana",
-		"Name": "yoga class",
-		"Date": "2017-03-27",
-		"StartTime": "17:00",
-		"Duration": "PT60M"
-	});
+// Only uncomment the lines below if you need to add some sample bookings to
+// DynamoDB Local. To do that, also uncomment the intent at the end of index.js.
+// The sample bookings are stored in localSampleRecords.json.
 
-  this.addRecord({
-    "RoomDate": "living room 2017-03-28",
-		"RoomName": "living room",
-		"Owner": "evgeny",
-		"Name": "software conference",
-		"Date": "2017-03-28",
-		"StartTime": "13:00",
-		"Duration": "PT1H"
-	});
-
-  this.addRecord({
-    "RoomDate": "big room 2017-03-29",
-		"RoomName": "big room",
-		"Owner": "stefan",
-		"Name": "snore meditation",
-		"Date": "2017-03-29",
-		"StartTime": "14:00",
-		"Duration": "PT30M"
-	});
-};
+// var fs = require('fs');
+// var sampleRecords;
+// fs.readFile('apps/book_event/localSampleRecords.json', 'utf8', function (err, data) {
+//   if (err) throw err;
+//   sampleRecords = JSON.parse(data);
+// });
+//
+// DbHelper.prototype.addSampleRecords = function() {
+//   sampleRecords.Items.forEach(function(item) {
+//     this.addRecord(item);
+//   });
+// };
 
 module.exports = DbHelper;

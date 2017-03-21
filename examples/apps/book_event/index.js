@@ -349,13 +349,15 @@ app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
 
 app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
 
-app.intent('addThreeSampleBookingsIntent', {
-  'utterances': ['{please add sample intents}']
-},
-  function(req, res){
-    dbHelper.addSampleRecords();
-    res.say('You have added some sample bookings to the database!').shouldEndSession(false);
-});
+// Only use the following intent locally, to add a quick set of sample bookings to
+// DynamoDB Local. Also un-comment the relevant lines at the end of db_helper.js.
+// The sample bookings are stored in localSampleRecords.json.
+
+// app.intent('addLocalSampleBookingsIntent', {},
+//   function(req, res){
+//     dbHelper.addSampleRecords();
+//     res.say('You have added some sample bookings to DynamoDB Local').shouldEndSession(false);
+// });
 
 function buildCard(title, text){
   return {
