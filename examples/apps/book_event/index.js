@@ -18,7 +18,7 @@ app.launch(function(req, res) {
 		"title": "Makers Rooms",
 		"text": "Welcome to Makers Rooms. Make a booking, check a schedule, or say help for more information.",
     "image": {
-      "smallImageUrl": "https://pbs.twimg.com/profile_images/3087236754/91e379b7e0006d38ee0526946a38a1ea_400x400.png"
+      "smallImageUrl": "https://cdn-images-1.medium.com/max/1600/1*HIJGMWtNFLBwpG5kpfmAXg.jpeg"
     }
   };
   res.card(cardText);
@@ -132,7 +132,7 @@ app.intent('ownerBookingIntent', {
         		"title": "You've Booked a Room!",
         		"text": "Success! You've booked " + bookingData.RoomName + " for " + bookingData.Date + " from " + bookingData.StartTime + " for " + stringDuration + " minutes for " + bookingData.Name + ".",
             "image": {
-              "smallImageUrl": "https://pbs.twimg.com/profile_images/3087236754/91e379b7e0006d38ee0526946a38a1ea_400x400.png"
+              "smallImageUrl": "https://cdn-images-1.medium.com/max/1600/1*HIJGMWtNFLBwpG5kpfmAXg.jpeg"
             }
           };
           res.card(cardText);
@@ -155,13 +155,13 @@ app.intent('findByRoomDateIntent', {
       .then(function(results) {
         if (results.length !== 0) {
           results.forEach(function(event) {
-            res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' on ' + event.Date + ' ').shouldEndSession(true);
+            res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' at ' + event.StartTime + ' ').shouldEndSession(true);
           });
         } else {
           res.say('The ' + room + ' is free the whole day on ' + date).shouldEndSession(true);
         }
       });
-  });
+});
 
 app.intent('findByRoomWithNowIntent', {
     'slots': {
@@ -245,7 +245,7 @@ app.intent('secretIntent', {
       "title": "Secret revealed!",
       "text": "Here is Rob!",
       "image": {
-        "smallImageUrl": "https://scontent-lht6-1.xx.fbcdn.net/v/t1.0-9/10350508_10153547537482877_795798945280772953_n.jpg?oh=c0037cecfdc5e0075c583f1adb65423e&oe=596E63DF"
+        "smallImageUrl": "https://cdn-images-1.medium.com/max/1600/1*HIJGMWtNFLBwpG5kpfmAXg.jpeg"
       }
     };
     res.card(cardText);
@@ -253,14 +253,23 @@ app.intent('secretIntent', {
 
 app.intent('AMAZON.HelpIntent', {},
   function(req, res) {
-    var help = 'Welcome to Makers Rooms Help <break time="0.5s"/>' +
-      'To create a new booking, say <break time="0.5s"/> create a new booking on a date and then follow the instructions <break time="1s"/>' +
+    var help = 'Welcome to Makers Rooms Help <break time="0.5s"/>';
+      var content = 'To create a new booking, say <break time="0.5s"/> create a new booking on a date and then follow the instructions <break time="1s"/>' +
       'To check a room\'s schedule for a certain date, say <break time="0.5s"/> tell me all the events in room for date <break time="1s"/>' +
       'To see what\'s going on in a room now, say <break time="0.5s"/>  what is on now in room <break time="1s"/>' +
       'To see what\'s going on in a room at a certain date and time, say <break time="0.5s"/>  what is on at time on date in room <break time="1s"/>' +
       'To delete a booking, say <break time="0.5s"/>  delete booking name from room on date <break time="1s"/>' +
       'You can also say <break time="0.5s"/>  stop or cancel to exit.';
-    res.say(help).shouldEndSession(true);
+      var cardText = {
+        "type": "Standard",
+        "title": "Makers Rooms Help",
+        "text": content,
+        "image": {
+          "smallImageUrl": "https://cdn-images-1.medium.com/max/1600/1*HIJGMWtNFLBwpG5kpfmAXg.jpeg"
+        }
+      };
+    res.say(help + content).shouldEndSession(true);
+    res.card(cardText);
   });
 
 var cancelIntentFunction = function(req, res) {
