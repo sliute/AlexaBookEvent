@@ -9,7 +9,6 @@ var dbHelper = new DbHelper();
 var PASSWORD = "object oriented booking";
 var validatedPassword;
 
-
 app.pre = function(request, response, type) {
   dbHelper.createBookedEventsTable();
 };
@@ -25,7 +24,7 @@ app.intent('startBookingIntent', {
   'utterances': ['{create|make} {|a} {booking|new booking}']
 },
   function(req, res) {
-    res.say('To create a new booking please say the password is, followed by the password').shouldEndSession(false);
+    res.say('To create a new booking please say <break time="0.5s"/> the password is <break time="0.5s"/> followed by the password').shouldEndSession(false);
     return true;
 });
 
@@ -170,12 +169,14 @@ app.intent('ownerBookingIntent', {
 
       return dbHelper.addRecord(bookingDataComplete)
         .then(function(overlaps) {
-          if (overlaps) {
+          if (overlaps >= 1) {
             res.say('Sorry, the room is booked at that time').shouldEndSession(false);
-          } else {
+          } else if (overlaps === 0) {
             res.say('Thanks ' + owner + ' You have booked the ' + bookingData.RoomName + ' for ' + bookingData.Date + ' from ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
             var cardText = buildCard("You've Booked a Room!", "Success! You've booked " + bookingData.RoomName + " for " + bookingData.Date + " from " + bookingData.StartTime + " for " + stringDuration + " minutes for " + bookingData.Name + ".");
             res.card(cardText);
+          } else {
+            res.say('Sorry, I have failed to add the booking to the database. Please retry.').shouldEndSession(true);
           }
         });
     }
@@ -199,9 +200,11 @@ app.intent('findByRoomDateIntent', {
     return dbHelper.readRoomDateRecords(roomDate)
       .then(function(results) {
         if (results.length !== 0) {
+          res.say('The ' + room + ' is booked for <break time="0.5s"/>').shouldEndSession(false);
           results.forEach(function(event) {
-            res.say('Booked for ' + event.Name + ' in ' + event.RoomName + ' at ' + event.StartTime + ' ').shouldEndSession(true);
+            res.say(event.Name + ' in ' + event.RoomName + ' at ' + event.StartTime + ' <break time="0.5s"/>').shouldEndSession(false);
           });
+          res.shouldEndSession(true);
         } else {
           res.say('The ' + room + ' is free the whole day on ' + date).shouldEndSession(true);
         }
@@ -301,8 +304,10 @@ function(req, res) {
       .then(function(deletedEvents) {
         if (deletedEvents === 0) {
           res.say('Sorry, there was no such booking to delete').shouldEndSession(true);
-        } else {
+        } else if (deletedEvents === 1) {
           res.say(eventName + ' from ' + eventRoom + ' on ' + eventDate + ' has been deleted').shouldEndSession(true);
+        } else {
+          res.say('Sorry, I have failed to delete the booking from the database. Please retry.').shouldEndSession(true);
         }
       });
   }
@@ -334,7 +339,7 @@ app.intent('AMAZON.HelpIntent', {},
     var cardText = buildCard("Makers Room Help", content);
     res.say(help + content).shouldEndSession(true);
     res.card(cardText);
-  });
+});
 
 var cancelIntentFunction = function(req, res) {
   res.say('Sayonara!').shouldEndSession(true);
@@ -350,7 +355,7 @@ app.intent('addThreeSampleBookingsIntent', {
   function(req, res){
     dbHelper.addSampleRecords();
     res.say('You have added some sample bookings to the database!').shouldEndSession(false);
-  });
+});
 
 function buildCard(title, text){
   return {

@@ -53,9 +53,13 @@ DbHelper.prototype.addRecord = function(record) {
         }
       });
       if (overlaps === 0) {
-        bookedEventsTable().insert(record);
+        bookedEventsTable().insert(record)
+        .catch(function(error){
+          console.log(error);
+          overlaps = -1;
+        });
       }
-      return overlaps;
+      return overlaps
     })
     .catch(function(error){
       console.log(error);
@@ -116,8 +120,12 @@ DbHelper.prototype.deleteRoomDateRecord = function(roomDate, eventName) {
       var deletedEvents = 0;
       records.forEach(function(record) {
         if (record.Name === eventName) {
-          bookedEventsTable().remove({hash: roomDate, range: eventName});
           deletedEvents += 1;
+          bookedEventsTable().remove({hash: roomDate, range: eventName})
+          .catch(function(error){
+            console.log(error);
+            deletedEvents = -1;
+          });
         }
       });
       return deletedEvents;
