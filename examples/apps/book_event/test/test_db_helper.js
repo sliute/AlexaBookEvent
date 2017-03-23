@@ -1,45 +1,75 @@
 'use strict';
 var chai = require('chai');
 var chaiAsPromised = require('chai-as-promised');
-var sinon = require('sinon');
 chai.use(chaiAsPromised);
 var expect = chai.expect;
 var DBhelper = require('../db_helper');
-var dynasty = require('dynasty')({});
-var EVENTS_TABLE_NAME = 'BookedEvents';
 chai.config.includeStack = true;
 
 describe('DBhelper', function(){
 
-  var subject = new DBhelper();
+  describe("#readRoomDateRecords()", function(){
 
-  var record =       {
-          "RoomDate": "joy room 2017-03-27",
-          "RoomName": "joy room",
-          "Owner": "dana",
-          "Name": "yoga class",
-          "Date": "2017-03-27",
-          "StartTime": "17:00",
-          "Duration": "PT60M"
-        }
+    var subject = new DBhelper();
 
-  it ('should return the record passed in', function(done) {
-    var fakeBookedEventsTable = function() {
-      return {
-        findAll: function() {
-          return new Promise(function(resolve, reject) {
-            resolve(record);
-          });
+    var record =       {
+            "RoomDate": "joy room 2017-03-27",
+            "RoomName": "joy room",
+            "Owner": "dana",
+            "Name": "yoga class",
+            "Date": "2017-03-27",
+            "StartTime": "17:00",
+            "Duration": "PT60M"
+          }
+
+    it ('should return the record passed in', function(done) {
+
+      var fakeBookedEventsTable = function() {
+        return {
+          findAll: function() {
+            return new Promise(function(resolve, reject) {
+              resolve(record);
+            });
+          }
         }
       }
-    }
 
-    var subject = new DBhelper(fakeBookedEventsTable);
+      var subject = new DBhelper(fakeBookedEventsTable);
 
-    subject.readRoomDateRecords("joy room 2017-03-27").then(function(candidate) {
-      expect(candidate).to.equal(record);
-      done();
+      subject.readRoomDateRecords("joy room 2017-03-27").then(function(candidate) {
+        expect(candidate).to.equal(record);
+        done();
+      });
     });
+
+    it ('should throw an error', function(done) {
+
+      var fakeBookedEventsTable = function() {
+        return {
+          findAll: function() {
+            return new Promise(function(resolve, reject){
+              reject(record);
+            });
+          }
+        }
+      }
+
+
+      var subject = new DBhelper(fakeBookedEventsTable);
+
+      subject.readRoomDateRecords().then(function(candidate) {
+        expect(candidate).not.to.equal(record);
+        done();
+      });
+
+      // subject.readRoomDateRecords()
+      //   .then(function(candidate) { throw new Error(); } )
+      //   .catch(function(candidate){
+      //     expect(candidate).not.to.equal(record);
+      //   done();
+      // });
+    });
+
   });
 
   var items = {
