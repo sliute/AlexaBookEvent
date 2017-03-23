@@ -249,6 +249,7 @@ app.intent('findByRoomWithTimeAndDateIntent', {
 
     return dbHelper.readRoomDateRecordsForTime(roomDate, date2, time)
     .then(function(ongoingEvent) {
+      console.log("index", ongoingEvent)
       if (ongoingEvent !== undefined) {
         var stringDuration = moment.duration(ongoingEvent.Duration, moment.ISO_8601).asMinutes();
         res.say(ongoingEvent.Owner + ' has booked the room from ' + ongoingEvent.StartTime + ' for ' + stringDuration + ' minutes for ' + ongoingEvent.Name).shouldEndSession(true);

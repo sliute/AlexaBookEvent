@@ -4,15 +4,15 @@ var _ = require('lodash');
 var moment = require('moment');
 var EVENTS_TABLE_NAME = 'BookedEvents';
 
-var dynasty = require('dynasty')({});
-// var localUrl = 'http://localhost:8000';
-// var localCredentials = {
-//   region: 'us-east-1',
-//   accessKeyId: 'fake',
-//   secretAccessKey: 'fake'
-// };
-// var localDynasty = require('dynasty')(localCredentials, localUrl);
-// var dynasty = localDynasty;
+// var dynasty = require('dynasty')({});
+var localUrl = 'http://localhost:8000';
+var localCredentials = {
+  region: 'us-east-1',
+  accessKeyId: 'fake',
+  secretAccessKey: 'fake'
+};
+var localDynasty = require('dynasty')(localCredentials, localUrl);
+var dynasty = localDynasty;
 
 function DbHelper(bookedEventsTable) {
   if (typeof bookedEventsTable == 'undefined') {
@@ -109,17 +109,21 @@ DbHelper.prototype.readRoomDateRecordsForTime = function(roomDate, date2, time) 
   return that.bookedEventsTable().findAll(roomDate)
     .then(function(records) {
       var ongoingEvent = records.find(function(record){
+        console.log("1", record)
         var searchTime = moment(new Date(date2).toISOString().slice(0,10) + " " + time);
         var start = moment(new Date(record.Date).toISOString().slice(0,10) + " " + record.StartTime);
         var duration = moment.duration(record.Duration, moment.ISO_8601).asMinutes();
         var end = start.clone().add(duration, 'minutes');
+        console.log("2", record)
         if (start <= searchTime && searchTime <= end) {
           return record;
         }
       });
+      console.log("3", ongoingEvent)
       return ongoingEvent;
     })
     .catch(function(error){
+      console.log("after catch");
       console.log(error);
     });
 };
