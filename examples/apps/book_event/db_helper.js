@@ -5,6 +5,10 @@ var moment = require('moment');
 var EVENTS_TABLE_NAME = 'BookedEvents';
 
 // var dynasty = require('dynasty')({});
+
+// !IMPORTANT! Before uploading to the Amazon Devs portal comment
+// from line 11 to 18 and decomment line 7.
+
 var localUrl = 'http://localhost:8000';
 var localCredentials = {
   region: 'us-east-1',
