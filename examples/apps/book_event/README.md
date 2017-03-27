@@ -1,5 +1,7 @@
 # Makers Rooms
 
+![Logo](./images/MR-wordmark.jpg)
+
 As part of our final project at Makers Academy, we have developed a skill for the Amazon Echo which facilitates the creation and management of meeting room bookings.  The skill itself was conceived, planned and developed in a period of less than two weeks.  
 
 ---
