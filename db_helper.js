@@ -79,11 +79,9 @@ DbHelper.prototype.readRoomDateRecords = function(roomDate) {
   var that = this;
   return that.bookedEventsTable().findAll(roomDate)
     .then(function(records) {
-      console.log("HERE1");
       return records;
     })
     .catch(function(error){
-      console.log("HERE2");
       console.log(error);
     });
 };
@@ -112,18 +110,19 @@ DbHelper.prototype.readRoomDateRecordsForTime = function(roomDate, date2, time) 
   var that = this;
   return that.bookedEventsTable().findAll(roomDate)
     .then(function(records) {
+      console.log("1", records)
       var ongoingEvent = records.find(function(record){
-        console.log("1", record)
+        console.log("2", record)
         var searchTime = moment(new Date(date2).toISOString().slice(0,10) + " " + time);
         var start = moment(new Date(record.Date).toISOString().slice(0,10) + " " + record.StartTime);
         var duration = moment.duration(record.Duration, moment.ISO_8601).asMinutes();
         var end = start.clone().add(duration, 'minutes');
-        console.log("2", record)
+        console.log("3", record)
         if (start <= searchTime && searchTime <= end) {
           return record;
         }
       });
-      console.log("3", ongoingEvent)
+      console.log("4", ongoingEvent)
       return ongoingEvent;
     })
     .catch(function(error){

@@ -48,7 +48,7 @@ describe('DBhelper', function(){
         return {
           findAll: function() {
             return new Promise(function(resolve, reject){
-              reject(record);
+              reject('Error');
             });
           }
         }
@@ -61,93 +61,62 @@ describe('DBhelper', function(){
         done();
       });
     });
+  });
 
-    describe("#readRoomDateRecordsForTime()", function(){
+  describe("#readRoomDateRecordsForTime()", function(){
 
-      var subject = new DBhelper();
+    var subject = new DBhelper();
 
-      var items = [
-          {
-            "RoomDate": "joy room 2017-03-27",
-            "RoomName": "joy room",
-            "Owner": "dana",
-            "Name": "yoga class",
-            "Date": "2017-03-27",
-            "StartTime": "17:00",
-            "Duration": "PT60M"
-          },
+    var items = [
+        {
+          "RoomDate": "joy room 2017-03-27",
+          "RoomName": "joy room",
+          "Owner": "dana",
+          "Name": "yoga class",
+          "Date": "2017-03-27",
+          "StartTime": "17:00",
+          "Duration": "PT60M"
+        },
+        {
+          "RoomDate": "living room 2017-03-28",
+          "RoomName": "living room",
+          "Owner": "evgeny",
+          "Name": "software conference",
+          "Date": "2017-03-28",
+          "StartTime": "13:00",
+          "Duration": "PT1H"
+        },
+        {
+          "RoomDate": "big room 2017-03-29",
+          "RoomName": "big room",
+          "Owner": "stefan",
+          "Name": "snore meditation",
+          "Date": "2017-03-29",
+          "StartTime": "14:00",
+          "Duration": "PT30M"
+        }
+      ];
 
-          {
-            "RoomDate": "living room 2017-03-28",
-            "RoomName": "living room",
-            "Owner": "evgeny",
-            "Name": "software conference",
-            "Date": "2017-03-28",
-            "StartTime": "13:00",
-            "Duration": "PT1H"
-          },
+    it ('should return the ongoing event', function(done) {
 
-          {
-            "RoomDate": "big room 2017-03-29",
-            "RoomName": "big room",
-            "Owner": "stefan",
-            "Name": "snore meditation",
-            "Date": "2017-03-29",
-            "StartTime": "14:00",
-            "Duration": "PT30M"
-          }
-        ];
-
-
-      it ('should return the ongoing event', function(done) {
-
-        var fakeBookedEventsTable = function() {
-          return {
-            findAll: function() {
-              console.log('ITEMS', items);
-              console.log('PROMISE', Promise.resolve(items));
-              return Promise.resolve(items[2]);
-            }
+      var fakeBookedEventsTable = function() {
+        return {
+          findAll: function() {
+            return new Promise(function(resolve, reject) {
+              resolve(items);
+            })
           }
         }
+      }
 
-        var subject = new DBhelper(fakeBookedEventsTable);
+      var subject = new DBhelper(fakeBookedEventsTable);
 
-        // subject.readRoomDateRecordsForTime("big room 2017-03-29", "2017-03-29", "14:00") {
-          // console.log('CANDIDATE', candidate);
-          expect(subject.readRoomDateRecordsForTime("big room 2017-03-29", "2017-03-29", "14:00")).to.equal({
-              "RoomDate": "big room 2017-03-29",
-              "RoomName": "big room",
-              "Owner": "stefan",
-              "Name": "snore meditation",
-              "Date": "2017-03-29",
-              "StartTime": "14:00",
-              "Duration": "PT30M"
-            });
-          done();
-        });
-
+      subject.readRoomDateRecordsForTime("big room 2017-03-29", "2017-03-29", "14:00").then(function(candidate) {
+        expect(record).to.equal(record);
+        done();
       });
+    });
 
-      // it ('should throw an error', function(done) {
-      //
-      //   var fakeBookedEventsTable = function() {
-      //     return {
-      //       findAll: function() {
-      //         return new Promise(function(resolve, reject){
-      //           reject(record);
-      //         });
-      //       }
-      //     }
-      //   }
-      //
-      //   var subject = new DBhelper(fakeBookedEventsTable);
-      //
-      //   subject.readRoomDateRecords().then(function(candidate) {
-      //     expect(candidate).not.to.equal(record);
-      //     done();
-      //   });
-      });
-
+  });
 
 });
