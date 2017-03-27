@@ -1,5 +1,7 @@
 # Makers Rooms
 
+![Logo](./images/MR-wordmark.jpg)
+
 As part of our final project at Makers Academy, we have developed a skill for the Amazon Echo which facilitates the creation and management of meeting room bookings.  The skill itself was conceived, planned and developed in a period of less than two weeks.  
 
 ---
@@ -67,7 +69,7 @@ Whilst our ultimate aim was to produce a skill which saved and read items from a
 
 Due to our lack of experience with the technology involved, the first four days of the project were spent researching, and completing tutorials on Node.js, and Amazon's Alexa Skills Kit.
 
-Once every member of the team was comfortable with the syntax we started to develop the skill using the Alexa-App-Server('AAP') and a local install of Amazon's DynamoDB. AAP provided us with a local server on which we could test our development and model our schema and utterances.  
+Once every member of the team was comfortable with the syntax we started to develop the skill using the [Alexa-App-Server('AAP')](https://github.com/alexa-js/alexa-app-server) and a local install of Amazon's DynamoDB. AAP provided us with a local server on which we could test our development and model our schema and utterances.  
 
 Whilst Amazon's Alexa Skills Kit provides a reliable online 'Service Simulator' for running tests, it required that any change to the code was first compressed and then uploaded to Lambda functions as a zip file. We therefore found that testing the skill using the local server provided by AAP was far more convenient.
 
@@ -95,17 +97,36 @@ Prerequisites:
 
 * Install [AWS CLI](http://docs.aws.amazon.com/cli/latest/userguide/installing.html);
 
-* At the command line, run the following commands:
+* To launch DynamoDBLocal (temporary memory), run the following commands in the command line:
 
 ```
+$ cd [to downloaded DynamoDB folder, where the .jar file is]
+$ java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -inMemory
+
+// Leave this open and start a new Terminal shell. Use the following commands to:
+
+- List tables in the database
+$ aws dynamodb list-tables --endpoint-url http://localhost:8000
+
+- Scan the BookedEvents table
+$ aws dynamodb scan --table-name BookedEvents --endpoint-url http://localhost:8000
+
+
+```
+
+* To access Alexa App Server in your browser, run the following commands in the command line:
+
+```
+$ git clone https://github.com/alexa-js/alexa-app-server.git
+$ cd examples
+$ npm install
+$ cd examples/apps
 $ git clone https://github.com/sliute/AlexaBookEvent.git
 $ cd AlexaBookEvent
 $ npm install
-$ cd examples/apps/book_event
-$ npm install
 $ cd [to downloaded DynamoDB folder, where the .jar file is]
 $ java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -inMemory
-$ cd [back to AlexaBookEvent/examples]
+$ cd ../.. [back to examples directory]
 $ node server
 $ open localhost:8080/alexa/book_event
 
