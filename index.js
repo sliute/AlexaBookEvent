@@ -2,11 +2,11 @@
 module.change_code = 1;
 var _ = require('lodash')
 var Alexa = require('alexa-app');
-var app = new Alexa.app('book_event');
+var app = new Alexa.app('makers_rooms');
 var moment = require('moment');
 var DbHelper = require('./db_helper');
 var dbHelper = new DbHelper();
-var PASSWORD = "object oriented booking";
+var PASSWORD = "code smell";
 var validatedPassword;
 
 app.pre = function(request, response, type) {

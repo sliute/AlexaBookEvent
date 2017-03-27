@@ -124,11 +124,9 @@ $ cd examples/apps
 $ git clone https://github.com/sliute/AlexaBookEvent.git
 $ cd AlexaBookEvent
 $ npm install
-$ cd [to downloaded DynamoDB folder, where the .jar file is]
-$ java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -inMemory
 $ cd ../.. [back to examples directory]
 $ node server
-$ open localhost:8080/alexa/book_event
+$ open localhost:8080/alexa/makers_rooms
 
 ```
 
