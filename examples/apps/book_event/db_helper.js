@@ -4,21 +4,25 @@ var _ = require('lodash');
 var moment = require('moment');
 var EVENTS_TABLE_NAME = 'BookedEvents';
 
-var dynasty = require('dynasty')({});
-// var localUrl = 'http://localhost:8000';
-// var localCredentials = {
-//   region: 'us-east-1',
-//   accessKeyId: 'fake',
-//   secretAccessKey: 'fake'
-// };
-// var localDynasty = require('dynasty')(localCredentials, localUrl);
-// var dynasty = localDynasty;
-
-function DbHelper() {}
-
-var bookedEventsTable = function() {
-  return dynasty.table(EVENTS_TABLE_NAME);
+// var dynasty = require('dynasty')({});
+var localUrl = 'http://localhost:8000';
+var localCredentials = {
+  region: 'us-east-1',
+  accessKeyId: 'fake',
+  secretAccessKey: 'fake'
 };
+var localDynasty = require('dynasty')(localCredentials, localUrl);
+var dynasty = localDynasty;
+
+function DbHelper(bookedEventsTable) {
+  if (typeof bookedEventsTable == 'undefined') {
+    this.bookedEventsTable = function() {
+      return dynasty.table(EVENTS_TABLE_NAME);
+    };
+  } else {
+    this.bookedEventsTable = bookedEventsTable
+  }
+}
 
 var overlap = function(r1, r2) {
   var start1 = moment(r1.Date + " " + r1.StartTime);
@@ -44,7 +48,8 @@ DbHelper.prototype.createBookedEventsTable = function() {
 };
 
 DbHelper.prototype.addRecord = function(record) {
-  return bookedEventsTable().findAll(record.RoomDate)
+  var that = this;
+  return that.bookedEventsTable().findAll(record.RoomDate)
     .then(function(dayRecords){
       var overlaps = 0;
       dayRecords.forEach(function(dayRecord) {
@@ -53,7 +58,7 @@ DbHelper.prototype.addRecord = function(record) {
         }
       });
       if (overlaps === 0) {
-        bookedEventsTable().insert(record)
+        that.bookedEventsTable().insert(record)
         .catch(function(error){
           console.log(error);
           overlaps = -1;
@@ -67,17 +72,21 @@ DbHelper.prototype.addRecord = function(record) {
 };
 
 DbHelper.prototype.readRoomDateRecords = function(roomDate) {
-  return bookedEventsTable().findAll(roomDate)
+  var that = this;
+  return that.bookedEventsTable().findAll(roomDate)
     .then(function(records) {
+      console.log("HERE1");
       return records;
     })
     .catch(function(error){
+      console.log("HERE2");
       console.log(error);
     });
 };
 
 DbHelper.prototype.readRoomDateRecordsForNow = function(roomDate) {
-  return bookedEventsTable().findAll(roomDate)
+  var that = this;
+  return that.bookedEventsTable().findAll(roomDate)
     .then(function(records) {
       var ongoingEvent = records.find(function(record){
         var now = moment();
@@ -96,32 +105,38 @@ DbHelper.prototype.readRoomDateRecordsForNow = function(roomDate) {
 };
 
 DbHelper.prototype.readRoomDateRecordsForTime = function(roomDate, date2, time) {
-  return bookedEventsTable().findAll(roomDate)
+  var that = this;
+  return that.bookedEventsTable().findAll(roomDate)
     .then(function(records) {
       var ongoingEvent = records.find(function(record){
+        console.log("1", record)
         var searchTime = moment(new Date(date2).toISOString().slice(0,10) + " " + time);
         var start = moment(new Date(record.Date).toISOString().slice(0,10) + " " + record.StartTime);
         var duration = moment.duration(record.Duration, moment.ISO_8601).asMinutes();
         var end = start.clone().add(duration, 'minutes');
+        console.log("2", record)
         if (start <= searchTime && searchTime <= end) {
           return record;
         }
       });
+      console.log("3", ongoingEvent)
       return ongoingEvent;
     })
     .catch(function(error){
+      console.log("after catch");
       console.log(error);
     });
 };
 
 DbHelper.prototype.deleteRoomDateRecord = function(roomDate, eventName) {
-  return bookedEventsTable().findAll(roomDate)
+  var that = this;
+  return that.bookedEventsTable().findAll(roomDate)
     .then(function(records) {
       var deletedEvents = 0;
       records.forEach(function(record) {
         if (record.Name === eventName) {
           deletedEvents += 1;
-          bookedEventsTable().remove({hash: roomDate, range: eventName})
+          that.bookedEventsTable().remove({hash: roomDate, range: eventName})
           .catch(function(error){
             console.log(error);
             deletedEvents = -1;
