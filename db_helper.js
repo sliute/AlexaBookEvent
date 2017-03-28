@@ -123,6 +123,7 @@ DbHelper.prototype.readRoomDateRecordsForTime = function(roomDate, date2, time) 
         }
       });
       console.log("4", ongoingEvent)
+      console.log("5", records)
       return ongoingEvent;
     })
     .catch(function(error){

@@ -1,8 +1,12 @@
 {
-  "name": "book_event",
+  "name": "makers_rooms",
   "version": "1.0.0",
   "description": "A voice-based room booking and occupancy web app",
   "main": "index.js",
+  "repository" : {
+   "type" : "git",
+   "url" : "https://github.com/sliute/AlexaBookEvent.git"
+ },
   "scripts": {
     "test": "mocha"
   },
