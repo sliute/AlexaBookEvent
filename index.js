@@ -1,299 +1,374 @@
-var hotswap = require('hotswap');
-var fs = require('fs');
-var path = require('path');
-var http = require('http');
-var https = require('https');
-var express = require('express');
-var alexa = require('alexa-app');
-var Promise = require('bluebird');
-var defaults = require("lodash.defaults");
-var utils = require("./utils");
+'use strict';
+module.change_code = 1;
+var _ = require('lodash')
+var Alexa = require('alexa-app');
+var app = new Alexa.app('makers_rooms');
+var moment = require('moment');
+var DbHelper = require('./db_helper');
+var dbHelper = new DbHelper();
+var PASSWORD = "code smell";
+var validatedPassword;
 
-var appServer = function(config) {
-  var self = {};
-  config = config || {};
+app.pre = function(request, response, type) {
+  dbHelper.createBookedEventsTable();
+};
 
-  var defaultOptions = {
-    log: true,
-    debug: true,
-    verify: false,
-    port: process.env.port || 8080,
-    httpEnabled: true,
-    httpsEnabled: false,
-    public_html: 'public_html',
-    server_dir: 'server',
-    server_root: '.',
-    app_root: 'alexa',
-    app_dir: 'apps'
-  };
+app.launch(function(req, res) {
+  var prompt = 'Welcome to Makers Rooms<break time="1s"/>' + 'Make a booking <break time="0.5s"/> check a room\'s schedule <break time="0.5s"/> or say help for more information.';
+  var cardText = buildCard("Makers Rooms", "Welcome to Makers Rooms. Make a booking, check a schedule, or say help for more information.");
+  res.card(cardText);
+  res.say(prompt).reprompt(prompt).shouldEndSession(false);
+});
 
-  self.config = defaults(config, defaultOptions);
+app.intent('startBookingIntent', {
+  'utterances': ['{create|make} {|a} {booking|new booking}']
+},
+  function(req, res) {
+    res.say('To create a new booking please say <break time="0.5s"/> the password is <break time="0.5s"/> followed by the password').shouldEndSession(false);
+    return true;
+});
 
-  if (self.config.verify && self.config.debug) {
-    throw new Error("invalid configuration: the verify and debug options cannot be both enabled");
-  }
-
-  if (!self.config.httpEnabled && !self.config.httpsEnabled) {
-    throw new Error("invalid configuration: either http or https must be enabled");
-  }
-
-  if (self.config.httpEnabled && self.config.httpsEnabled && self.config.port == self.config.httpsPort) {
-    throw new Error("invalid configuration: http and https ports must be different");
-  }
-
-  self.apps = {};
-
-  self.log = function(msg) {
-    if (self.config.log) {
-      console.log(msg);
+app.intent('passwordBookingIntent', {
+  'slots': {
+    'PASSWORD': 'PASSWORDS',
+  },
+  'utterances': ['{the password is} {-|PASSWORD}']
+},
+  function(req, res) {
+    var password = req.slot('PASSWORD');
+    if (password === PASSWORD) {
+      var session = req.getSession();
+      session.set("PasswordValidation", true);
+      res.say('Thank you. What is the date of your booking?').shouldEndSession(false);
+      return true;
     }
-  };
-
-  self.error = function(msg) {
-    console.error(msg);
-  };
-
-  // configure hotswap to watch for changes and swap out module code
-  var hotswapCallback = function(filename) {
-    self.log("hotswap reloaded " + filename);
-  };
-
-  var errorCallback = function(e) {
-    self.error("-----\nhotswap error: " + e + "\n-----\n");
-  };
-
-  hotswap.on('swap', hotswapCallback);
-  hotswap.on('error', errorCallback);
-
-  // load application modules
-  self.load_apps = function(app_dir, root) {
-    // set up a router to hang all alexa apps off of
-    var alexaRouter = express.Router();
-
-    var normalizedRoot = utils.normalizeApiPath(root);
-    self.express.use(normalizedRoot, alexaRouter);
-
-    var app_directories = function(srcpath) {
-      return fs.readdirSync(srcpath).filter(function(file) {
-        return utils.isValidDirectory(path.join(srcpath, file));
-      });
-    };
-
-    app_directories(app_dir).forEach(function(dir) {
-      var package_json = path.join(app_dir, dir, "package.json");
-      if (!utils.isValidFile(package_json)) {
-        self.error("   package.json not found in directory " + dir);
-        return;
-      }
-
-      var pkg = utils.readJsonFile(package_json);
-      if (!pkg || !pkg.main || !pkg.name) {
-        self.error("   failed to load " + package_json);
-        return;
-      }
-
-      var main = fs.realpathSync(path.join(app_dir, dir, pkg.main));
-      if (!utils.isValidFile(main)) {
-        self.error("   main file not found for app [" + pkg.name + "]: " + main);
-        return;
-      }
-
-      var app;
-      try {
-        app = require(main);
-      } catch (e) {
-        self.error("   error loading app [" + main + "]: " + e);
-        return;
-      }
-
-      self.apps[pkg.name] = pkg;
-      self.apps[pkg.name].exports = app;
-      if (typeof app.express != "function") {
-        self.error("   app [" + pkg.name + "] is not an instance of alexa-app");
-        return;
-      }
-
-      // extract Alexa-specific attributes from package.json, if they exist
-      if (typeof pkg.alexa == "object") {
-        app.id = pkg.alexa.applicationId;
-      }
-
-      // attach the alexa-app instance to the alexa router
-      app.express({
-        expressApp: alexaRouter,
-        debug: self.config.debug,
-        checkCert: self.config.verify,
-        preRequest: self.config.preRequest,
-        postRequest: self.config.postRequest
-      });
-
-      var endpoint = path.posix.join(normalizedRoot, app.name);
-      self.log("   loaded app [" + pkg.name + "] at endpoint: " + endpoint);
-    });
-
-    return self.apps;
-  };
-
-  // load server modules, eg. code that processes forms, anything that wants to hook into express
-  self.load_server_modules = function(server_dir) {
-    var server_files = function(srcpath) {
-      return fs.readdirSync(srcpath).filter(function(file) {
-        return utils.isValidFile(path.join(srcpath, file));
-      });
-    };
-    server_files(server_dir).forEach(function(file) {
-      file = fs.realpathSync(path.join(server_dir, file));
-      self.log("   loaded " + file);
-      var func = require(file);
-      if (typeof func == "function") {
-        func(self.express, self);
-      }
-    });
-  };
-
-  // start the server
-  self.start = function() {
-    self.express = express();
-
-    self.express.set('views', path.join(__dirname, 'views'));
-    self.express.set('view engine', 'ejs');
-    self.express.use(express.static(path.join(__dirname, 'views')));
-
-    if (typeof self.config.pre == "function") {
-      self.config.pre(self);
+    else {
+      res.say('Sorry. I do not recognise this password. Please try again or ask makers for the correct password.').shouldEndSession(false);
+      return true;
     }
+});
 
-    // serve static content
-    var static_dir = path.join(self.config.server_root, self.config.public_html);
-    if (utils.isValidDirectory(static_dir)) {
-      self.log("serving static content from: " + static_dir);
-      self.express.use(express.static(static_dir));
-    } else {
-      self.log("not serving static content because directory [" + static_dir + "] does not exist");
+app.intent('dateBookingIntent', {
+  'slots': {
+    'DATE': 'AMAZON.DATE',
+  },
+  'utterances': ['{-|DATE}']
+},
+  function(req, res) {
+    validatedPassword = res.sessionObject.attributes.PasswordValidation;
+    if (validatedPassword === true) {
+      var date = req.slot('DATE');
+      var session = req.getSession();
+      session.set("Date", date);
+      res.say('You are making a booking for ' + date + '. Which room would you like to book?').shouldEndSession(false);
+      return true;
     }
-
-    // find any server-side processing modules and let them hook in
-    var server_dir = path.join(self.config.server_root, self.config.server_dir);
-    if (utils.isValidDirectory(server_dir)) {
-      self.log("loading server-side modules from: " + server_dir);
-      self.load_server_modules(server_dir);
-    } else {
-      self.log("no server modules loaded because directory [" + server_dir + "] does not exist");
+    else {
+      res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say <break time="0.5s"/> the password is <break time="0.5s"/> followed by the password').shouldEndSession(true);
+      return true;
     }
+});
 
-    // find and load alexa-app modules
-    var app_dir = path.join(self.config.server_root, self.config.app_dir);
-    if (utils.isValidDirectory(app_dir)) {
-      self.log("loading apps from: " + app_dir);
-      self.load_apps(app_dir, self.config.app_root);
-    } else {
-      self.log("apps not loaded because directory [" + app_dir + "] does not exist");
+app.intent('roomBookingIntent', {
+  'slots': {
+    'ROOM': 'LIST_OF_ROOMS',
+  },
+  'utterances': ['{|book} {-|ROOM}']
+},
+  function(req, res) {
+    if (validatedPassword === true) {
+      var room = req.slot('ROOM');
+      var session = req.getSession();
+      session.set("RoomName", room);
+      res.say('You are booking ' + room + '. What time would you like to book ' + room + ' for?').shouldEndSession(false);
+      return true;
     }
+    else {
+      res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say <break time="0.5s"/> the password is <break time="0.5s"/> followed by the password').shouldEndSession(true);
+      return true;
+    }
+});
 
-    if (self.config.httpsEnabled) {
-      self.log("enabling https");
+app.intent('timeBookingIntent', {
+  'slots': {
+    'TIME': 'AMAZON.TIME',
+  },
+  'utterances': ['{|book} {|for|at} {-|TIME}']
+},
+  function(req, res) {
+    if (validatedPassword === true) {
+      var time = req.slot('TIME');
+      var session = req.getSession();
+      session.set("StartTime", time);
+      res.say('You are booking the room from ' + time + '. How long would you like to book it for?').shouldEndSession(false);
+      return true;
+    }
+    else {
+      res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say <break time="0.5s"/> the password is <break time="0.5s"/> followed by the password').shouldEndSession(true);
+      return true;
+    }
+});
 
-      if (self.config.privateKey != undefined && self.config.certificate != undefined && self.config.httpsPort != undefined) {
-        var sslCertRoot = path.join(self.config.server_root, 'sslcert');
-        var privateKeyFile = path.join(sslCertRoot, self.config.privateKey);
-        var certificateFile = path.join(sslCertRoot, self.config.certificate);
-        var chainFile = (self.config.chain != undefined) ? path.join(sslCertRoot, self.config.chain) : undefined;
+app.intent('durationBookingIntent', {
+  'slots': {
+    'DURATION': 'AMAZON.DURATION',
+  },
+  'utterances': ['{|book} {|for} {-|DURATION}']
+},
+  function(req, res) {
+    if (validatedPassword === true) {
+      var duration = req.slot('DURATION');
+      var stringDuration = moment.duration(duration, moment.ISO_8601).asMinutes();
+      var session = req.getSession();
+      session.set("Duration", duration);
+      res.say('You are booking the room for ' + stringDuration + ' minutes. What is the name of your event?').shouldEndSession(false);
+      return true;
+    }
+    else {
+      res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say <break time="0.5s"/> the password is <break time="0.5s"/> followed by the password').shouldEndSession(true);
+      return true;
+    }
+});
 
-        if (utils.isValidFile(privateKeyFile) && utils.isValidFile(certificateFile)) {
-          var privateKey = utils.readFile(privateKeyFile);
-          var certificate = utils.readFile(certificateFile);
+app.intent('nameBookingIntent', {
+  'slots': {
+    'NAME': 'DESCRIPTION',
+  },
+  'utterances': ['{|my event is called} {-|NAME}']
+},
+  function(req, res) {
+    if (validatedPassword === true) {
+      var name = req.slot('NAME');
+      var session = req.getSession();
+      session.set("Name", name);
+      res.say('You are booking the room for ' + name + '. Finally, what is your name?').shouldEndSession(false);
+      return true;
+    }
+    else {
+      res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say <break time="0.5s"/> the password is <break time="0.5s"/> followed by the password').shouldEndSession(true);
+      return true;
+    }
+});
 
-          var chain = undefined;
-          if (chainFile != undefined) {
-            if (utils.isValidFile(chainFile)) {
-              chain = utils.readFile(chainFile);
-            } else {
-              self.error("chain: '" + self.config.chain + "' does not exist in " + sslCertRoot);
-            }
-          }
+app.intent('ownerBookingIntent', {
+  'slots': {
+    'OWNER': 'LIST_OF_MAKERS',
+  },
+  'utterances': ['{|my name is} {-|OWNER}']
+},
+  function(req, res) {
+    if (validatedPassword === true) {
+      var bookingData = res.sessionObject.attributes;
+      var owner = req.slot('OWNER');
+      var session = req.getSession();
+      session.clear("PasswordValidation", true);
+      session.set("Owner", owner);
+      session.set("RoomDate", bookingData.RoomName + " " + bookingData.Date);
+      var bookingDataComplete = res.sessionObject.attributes;
+      var stringDuration = moment.duration(bookingData.Duration, moment.ISO_8601).asMinutes();
 
-          if (chain == undefined && chainFile != undefined) {
-            self.error("failed to load chain from " + sslCertRoot + ", https will not be enabled");
-          } else if (privateKey != undefined && certificate != undefined) {
-            var credentials = {
-              key: privateKey,
-              cert: certificate
-            };
-
-            if (self.config.passphrase != undefined) {
-              credentials.passphrase = self.config.passphrase
-            }
-
-            if (chain != undefined) {
-              credentials.ca = chain;
-              self.log("using chain certificate from " + sslCertRoot);
-            }
-
-            try {
-              // this can fail it the certs were generated incorrectly
-              var httpsServer = https.createServer(credentials, self.express);
-
-              if (typeof config.host === 'string') {
-                self.httpsInstance = httpsServer.listen(self.config.httpsPort, self.config.host);
-                self.log("listening on https://" + self.config.host + ":" + self.config.httpsPort);
-              } else {
-                self.httpsInstance = httpsServer.listen(self.config.httpsPort);
-                self.log("listening on https port " + self.config.httpsPort);
-              }
-            } catch (error) {
-              self.error("failed to listen via https: " + error);
-            }
+      return dbHelper.addRecord(bookingDataComplete)
+        .then(function(overlaps) {
+          if (overlaps >= 1) {
+            res.say('Sorry, the room is booked at that time').shouldEndSession(false);
+          } else if (overlaps === 0) {
+            res.say('Thanks ' + owner + '. You have booked the ' + bookingData.RoomName + ' for ' + bookingData.Date + ' from ' + bookingData.StartTime + ' for ' + stringDuration + ' minutes for ' + bookingData.Name).shouldEndSession(true);
+            var cardText = buildCard("You've Booked a Room!", "Success! You've booked " + bookingData.RoomName + " for " + bookingData.Date + " from " + bookingData.StartTime + " for " + stringDuration + " minutes for " + bookingData.Name + ".");
+            res.card(cardText);
           } else {
-            self.error("failed to load privateKey or certificate from " + sslCertRoot + ", https will not be enabled");
+            res.say('Sorry, I have failed to add the booking to the database. Please retry.').shouldEndSession(true);
           }
+        });
+    }
+    else {
+      res.say('Sorry. You can not create a booking without providing a password. To create a new booking please say <break time="0.5s"/> the password is <break time="0.5s"/> followed by the password').shouldEndSession(true);
+      return true;
+    }
+});
+
+app.intent('findByRoomDateIntent', {
+  'slots': {
+    'ROOM': 'LIST_OF_ROOMS',
+    'DATE': 'AMAZON.DATE'
+  },
+  'utterances': ['{find|tell|give} {|me} {|all} {|the} {bookings|events} {in} {-|ROOM} {|on|for} {-|DATE}']
+},
+  function(req, res){
+    var room = req.slot('ROOM');
+    var date = req.slot('DATE');
+    var roomDate = req.slot('ROOM') + ' ' + req.slot('DATE');
+    return dbHelper.readRoomDateRecords(roomDate)
+      .then(function(results) {
+        if (results.length !== 0) {
+          res.say('On ' + date + ' the ' + room + ' is booked for <break time="0.5s"/>').shouldEndSession(false);
+          results.forEach(function(event) {
+            res.say(event.Owner + 's' + event.Name + ' at ' + event.StartTime + ' <break time="0.5s"/>').shouldEndSession(false);
+          });
+          res.shouldEndSession(true);
         } else {
-          self.error("privateKey: '" + self.config.privateKey + "' or certificate: '" + self.config.certificate + "' do not exist in " + sslCertRoot + ", https will not be enabled");
+          res.say('The ' + room + ' is free the whole day on ' + date).shouldEndSession(true);
         }
+      });
+});
+
+app.intent('findByRoomWithNowIntent', {
+    'slots': {
+      'ROOM': 'LIST_OF_ROOMS'
+  },
+    'utterances': ['{find|tell|give} {|me} {what is on now|what\'s on now|what is going on now|what\'s going on now} {in} {-|ROOM}']
+},
+  function(req, res) {
+    var date = new Date().toISOString().slice(0,10);
+    var room = req.slot('ROOM');
+    var roomDate = (room + " " + date);
+
+    return dbHelper.readRoomDateRecordsForNow(roomDate)
+    .then(function(ongoingEvent) {
+      if (ongoingEvent !== undefined) {
+        var stringDuration = moment.duration(ongoingEvent.Duration, moment.ISO_8601).asMinutes();
+        res.say(ongoingEvent.RoomName + ' is booked from ' + ongoingEvent.StartTime + ' for ' + stringDuration + ' minutes for ' + ongoingEvent.Name).shouldEndSession(true);
       } else {
-        self.error("httpsPort, privateKey or certificate parameter is not set in config, https will not be enabled");
+        res.say(room + ' is currently available').shouldEndSession(true);
       }
-    }
+    });
+});
 
-    if (self.config.httpEnabled) {
-      if (typeof config.host === 'string') {
-        self.instance = self.express.listen(self.config.port, self.config.host);
-        self.log("listening on http://" + self.config.host + ":" + self.config.port);
+app.intent('findByRoomWithTimeAndDateIntent', {
+  'slots': {
+    'TIME': 'AMAZON.TIME',
+    'ROOM': 'LIST_OF_ROOMS',
+    'DATE': 'AMAZON.DATE'
+  },
+  'utterances': ['{find|tell|give} {|me} {what is on at|what\'s on at } {-|TIME} {|on} {-|DATE} {in} {-|ROOM}']
+},
+  function (req, res) {
+    var time = req.slot('TIME');
+    var date2 = req.slot('DATE');
+    var room = req.slot('ROOM');
+    var roomDate = (room + " " + date2);
+
+    return dbHelper.readRoomDateRecordsForTime(roomDate, date2, time)
+    .then(function(ongoingEvent) {
+      console.log("index", ongoingEvent)
+      if (ongoingEvent !== undefined) {
+        var stringDuration = moment.duration(ongoingEvent.Duration, moment.ISO_8601).asMinutes();
+        res.say(ongoingEvent.Owner + ' has booked the room from ' + ongoingEvent.StartTime + ' for ' + stringDuration + ' minutes for ' + ongoingEvent.Name).shouldEndSession(true);
       } else {
-        self.instance = self.express.listen(self.config.port);
-        self.log("listening on http port " + self.config.port);
+        res.say(room + ' is available on ' + date2 + ' at ' + time).shouldEndSession(true);
       }
+    });
+});
+
+app.intent('startDeleteBookingIntent', {
+  'utterances': ['{delete|remove} {|a} {booking}']
+},
+  function(req, res) {
+    res.say('To delete a booking please say delete with password, followed by the password').shouldEndSession(false);
+    return true;
+});
+
+app.intent('passwordDeleteBookingIntent', {
+  'slots': {
+    'PASSWORD': 'PASSWORDS',
+  },
+  'utterances': ['{delete with password} {-|PASSWORD}']
+},
+  function(req, res) {
+    var password = req.slot('PASSWORD');
+    if (password === PASSWORD) {
+      var session = req.getSession();
+      session.set("PasswordValidation", true);
+      res.say('Thank you To delete a booking say delete <break time="0.5s"/> name from <break time="0.5s"/> room on <break time="0.5s"/> date').shouldEndSession(false);
+      return true;
     }
-
-    if (typeof self.config.post == "function") {
-      self.config.post(self);
+    else {
+      res.say('Sorry. I do not recognise this password. Please try again or ask makers for the correct password.').shouldEndSession(false);
+      return true;
     }
+});
 
-    return this;
-  };
+app.intent('deleteBookingIntent', {
+  'slots': {
+    'NAME': 'DESCRIPTION',
+    'ROOM': 'LIST_OF_ROOMS',
+    'DATE': 'AMAZON.DATE'
+  },
+  'utterances': ['{remove|delete} {-|NAME} {from} {-|ROOM} {|on|for} {-|DATE}']},
+function(req, res) {
+  validatedPassword = res.sessionObject.attributes.PasswordValidation;
+  if (validatedPassword === true) {
+    var eventName = req.slot('NAME');
+    var eventRoom = req.slot('ROOM');
+    var eventDate = req.slot('DATE');
+    var roomDate = req.slot('ROOM') + ' ' + req.slot('DATE');
+    return dbHelper.deleteRoomDateRecord(roomDate, eventName)
+      .then(function(deletedEvents) {
+        if (deletedEvents === 0) {
+          res.say('Sorry, I found no such booking to delete').shouldEndSession(true);
+        } else if (deletedEvents === 1) {
+          res.say('You have deleted ' + eventName + ' from ' + eventRoom + ' for ' + eventDate).shouldEndSession(true);
+        } else {
+          res.say('Sorry, I have failed to delete the booking from the database. Please retry.').shouldEndSession(true);
+        }
+      });
+  }
+  else {
+    res.say('Sorry. You can not delete a booking without providing a password. To delete a booking please say <break time="0.5s"/> the password is <break time="0.5s"/> followed by the password').shouldEndSession(true);
+    return true;
+  }
+});
 
-  // close all server instances
-  self.stop = function() {
-    if (typeof self.instance !== "undefined") {
-      self.instance.close();
-    }
+app.intent('secretIntent', {
+  'utterances': ['{who\'s|who is} {Rob Holden}']
+},
+  function(req, res) {
+    var answer = 'I know <break time="0.5s"/> but I won\'t tell you';
+    res.say(answer).shouldEndSession(true);
+    var cardText = buildCard("Secret revealed", "Here is Rob!");
+    res.card(cardText);
+});
 
-    if (typeof self.httpsInstance !== "undefined") {
-      self.httpsInstance.close();
-    }
+app.intent('AMAZON.HelpIntent', {},
+  function(req, res) {
+    var help = 'Welcome to Makers Rooms Help <break time="0.5s"/>';
+    var content = 'To create a new booking, say <break time="0.5s"/> create a new booking on a date and then follow the instructions <break time="1s"/>' +
+    'To check a room\'s schedule for a certain date, say <break time="0.5s"/> tell me all the events in room for date <break time="1s"/>' +
+    'To see what\'s going on in a room now, say <break time="0.5s"/>  what is on now in room <break time="1s"/>' +
+    'To see what\'s going on in a room at a certain date and time, say <break time="0.5s"/>  what is on at time on date in room <break time="1s"/>' +
+    'To delete a booking, say <break time="0.5s"/>  delete booking name from room on date <break time="1s"/>' +
+    'You can also say <break time="0.5s"/>  stop or cancel to exit.';
+    var cardText = buildCard("Makers Room Help", content);
+    res.say(help + content).shouldEndSession(true);
+    res.card(cardText);
+});
 
-    // deactivate all hotswap listener
-    hotswap.removeListener('swap', hotswapCallback);
-    hotswap.removeListener('error', errorCallback);
-  };
-
-  return self;
+var cancelIntentFunction = function(req, res) {
+  res.say('Sayonara!').shouldEndSession(true);
 };
 
-// a shortcut start(config) method to avoid creating an instance if not needed
-appServer.start = function(config) {
-  var appServerInstance = new appServer(config);
-  appServerInstance.start();
-  return appServerInstance;
-};
+app.intent('AMAZON.CancelIntent', {}, cancelIntentFunction);
 
-module.exports = appServer;
+app.intent('AMAZON.StopIntent', {}, cancelIntentFunction);
+
+// Only use the following intent locally, to add a quick set of sample bookings to
+// DynamoDB Local. Also un-comment the relevant lines at the end of db_helper.js.
+// The sample bookings are stored in localSampleRecords.json.
+
+// app.intent('addLocalSampleBookingsIntent', {},
+//   function(req, res){
+//     dbHelper.addSampleRecords();
+//     res.say('You have added some sample bookings to DynamoDB Local').shouldEndSession(false);
+// });
+
+function buildCard(title, text){
+  return {
+    "type": "Standard",
+    "title": title,
+    "text": text,
+    "image": {
+      "smallImageUrl": "https://cdn-images-1.medium.com/max/1600/1*HIJGMWtNFLBwpG5kpfmAXg.jpeg"
+    }
+  };
+}
+
+module.exports = app;
